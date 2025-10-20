@@ -14,7 +14,7 @@ export default function AuthCallback() {
       return;
     }
     // Exchange the code from the magic link for a session
-    supabase.auth.exchangeCodeForSession({ code })
+    await supabase.auth.exchangeCodeForSession(code)
       .then(({ error }) => {
         if (error) {
           console.error(error);
