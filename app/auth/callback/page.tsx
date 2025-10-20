@@ -13,17 +13,17 @@ export default function AuthCallback() {
       router.replace('/login');
       return;
     }
-    // Exchange the code from the magic link for a session
-    await supabase.auth.exchangeCodeForSession(code)
-      .then(({ error }) => {
-        if (error) {
-          console.error(error);
-          router.replace('/login');
-        } else {
-          router.replace('/create'); // land on Create after sign-in
-        }
-      });
+
+    (async () => {
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      if (error) {
+        console.error(error);
+        router.replace('/login');
+      } else {
+        router.replace('/create');
+      }
+    })();
   }, [params, router]);
 
-  return <main style={{padding:24}}>Signing you in…</main>;
+  return <main style={{ padding: 24 }}>Signing you in…</main>;
 }
