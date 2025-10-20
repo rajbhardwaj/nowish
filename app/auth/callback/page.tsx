@@ -4,9 +4,8 @@ import { Suspense, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 
-// prevent static prerender; this page must run on the client with the URL code
+// tell Next not to prerender this route
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
 function CallbackInner() {
   const params = useSearchParams();
