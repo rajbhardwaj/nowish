@@ -63,8 +63,12 @@ export async function POST(req: Request) {
     if (rsvpErr) return NextResponse.json({ error: rsvpErr.message }, { status: 400 });
 
     return NextResponse.json({ ok: true });
-  } catch (e: any) {
-    console.error(e);
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
-  }
+    } catch (e: unknown) {
+        if (e instanceof Error) {
+        console.error(e.message);
+        } else {
+        console.error(e);
+        }
+        return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    }
 }
