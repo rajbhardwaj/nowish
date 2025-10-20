@@ -8,37 +8,41 @@ export default function MyInvitesPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+    useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { window.location.href = '/login'; return; }
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { window.location.href = '/login'; return; }
 
-      // fetch your invites
-      const { data, error } = await supabase
+        // Get your invites
+        const { data: invites, error } = await supabase
         .from('open_invites')
         .select('id,title,window_start,window_end')
         .eq('creator_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error || !data) { setRows([]); setLoading(false); return; }
+        if (error || !invites) { setRows([]); setLoading(false); return; }
 
-      // get RSVP counts per invite
-      const ids = data.map(d => d.id);
-      const { data: counts } = await supabase
+        const ids = invites.map(i => i.id);
+        type RSVPRow = { invite_id: string };
+
+        // Fetch RSVPs for those invites
+        const { data: rsvps } = await supabase
         .from('rsvps')
-        .select('invite_id, count:invite_id', { count: 'exact', head: false })
-        .in('invite_id', ids);
+        .select('invite_id')
+        .in('invite_id', ids) as { data: RSVPRow[] | null };
 
-      const countMap = new Map<string, number>();
-      counts?.forEach((c: any) => countMap.set(c.invite_id, (countMap.get(c.invite_id) || 0) + 1));
+        const countMap = new Map<string, number>();
+        (rsvps || []).forEach(r => {
+        countMap.set(r.invite_id, (countMap.get(r.invite_id) || 0) + 1);
+        });
 
-      setRows(data.map(d => ({
-        ...d,
-        rsvp_count: countMap.get(d.id) || 0
-      })) as Row[]);
-      setLoading(false);
+        setRows(invites.map(inv => ({
+        ...inv,
+        rsvp_count: countMap.get(inv.id) || 0,
+        })) as Row[]);
+        setLoading(false);
     })();
-  }, []);
+    }, []);
 
   if (loading) return <main style={{padding:24}}>Loading…</main>;
 

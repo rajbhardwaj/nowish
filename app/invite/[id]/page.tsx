@@ -42,17 +42,22 @@ export default function InvitePage() {
     if (inviteId) load();
   }, [inviteId]);
 
-  async function rsvp(state: 'join' | 'maybe' | 'decline') {
-    if (!invite) return;
-    const { error } = await supabase.rpc('upsert_member_and_rsvp', {
-        p_invite: invite.id,
-        p_state: state,
-        p_guest_name: name || null,
-        p_guest_email: email || null,
-    });
-    if (error) return alert(error.message);
-    alert(state === 'join' ? 'See you there!' : state === 'maybe' ? 'Maybe noted!' : 'All good — thanks!');
-  }
+    async function rsvp(state: 'join' | 'maybe' | 'decline') {
+        if (!invite) return;
+        const res = await fetch('/api/rsvp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+            inviteId: invite.id,
+            state,
+            guestName: name || null,
+            guestEmail: email || null,
+            }),
+        });
+        const json = await res.json();
+        if (!res.ok) return alert(json.error || 'Something went wrong');
+        alert(state === 'join' ? 'See you there!' : state === 'maybe' ? 'Maybe noted!' : 'All good — thanks!');
+    }
 
   if (loading) return <main style={{ padding: 24 }}>Loading…</main>;
   if (!invite) return <main style={{ padding: 24 }}>Invite not found.</main>;
@@ -92,7 +97,7 @@ export default function InvitePage() {
       <div style={{ display: 'flex', gap: 8 }}>
         <button onClick={() => rsvp('join')}>Join</button>
         <button onClick={() => rsvp('maybe')}>Maybe</button>
-        <button onClick={() => rsvp('decline')}>Can't make it</button>
+        <button onClick={() => rsvp('decline')}>{"Can't make it"}</button>
       </div>
     </main>
   );
