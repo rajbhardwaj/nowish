@@ -7,7 +7,6 @@ export default function InviteClient({ inviteId }: { inviteId: string }) {
   const [state, setState] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // identity
   const [authedEmail, setAuthedEmail] = useState<string | null>(null);
   const [guestName, setGuestName] = useState('');
   const [guestEmail, setGuestEmail] = useState('');
@@ -17,22 +16,22 @@ export default function InviteClient({ inviteId }: { inviteId: string }) {
       const { data } = await supabase.auth.getUser();
       const email = data.user?.email ?? null;
       setAuthedEmail(email);
-      // if the user is authenticated, we can default name from metadata if you add it later
     })();
   }, []);
 
   async function sendRSVP(status: 'join' | 'maybe' | 'decline') {
     if (busy) return;
 
-    // Require minimal identity if not signed in
+    // === Guest path ===
     if (!authedEmail) {
       const email = guestEmail.trim();
       const name = guestName.trim();
+
       if (!email) {
         alert('Please enter your email so the host knows who you are.');
         return;
       }
-      // optional: very light email shape check
+
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
         alert('Please enter a valid email.');
         return;
@@ -50,16 +49,20 @@ export default function InviteClient({ inviteId }: { inviteId: string }) {
         });
         if (error) {
           console.error(error);
-          alert('Could not record RSVP.');
+          alert(`Could not record RSVP: ${error.message}`); // 👈 real reason shown
           setState(null);
         }
+      } catch (err) {
+        console.error(err);
+        alert(`Unexpected error: ${(err as Error).message}`);
+        setState(null);
       } finally {
         setBusy(false);
       }
       return;
     }
 
-    // Authenticated path: just store RSVP; backend can resolve user id/email
+    // === Authenticated path ===
     setBusy(true);
     try {
       setState(status);
@@ -70,52 +73,70 @@ export default function InviteClient({ inviteId }: { inviteId: string }) {
       });
       if (error) {
         console.error(error);
-        alert('Could not record RSVP.');
+        alert(`Could not record RSVP: ${error.message}`);
         setState(null);
       }
+    } catch (err) {
+      console.error(err);
+      alert(`Unexpected error: ${(err as Error).message}`);
+      setState(null);
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <>
-      {/* Show identity prompt only if not signed-in */}
+    <div style={{ marginTop: 24, textAlign: 'center' }}>
+      {/* === Guest identity form === */}
       {!authedEmail && (
         <section
           style={{
-            marginTop: 16,
+            marginBottom: 20,
             padding: 12,
             border: '1px solid #eee',
             borderRadius: 10,
             background: '#fafafa',
-            maxWidth: 520,
+            maxWidth: 400,
             marginInline: 'auto',
           }}
         >
-          <p style={{ margin: '0 0 8px' }}>
-            Let the host know who you are:
-          </p>
+          <p style={{ margin: '0 0 8px' }}>Let the host know who you are:</p>
           <div style={{ display: 'grid', gap: 8 }}>
             <input
               type="text"
               placeholder="Your name (optional)"
               value={guestName}
               onChange={(e) => setGuestName(e.target.value)}
-              style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #ddd' }}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 8,
+                border: '1px solid #ddd',
+              }}
             />
             <input
               type="email"
               placeholder="Your email (required)"
               value={guestEmail}
               onChange={(e) => setGuestEmail(e.target.value)}
-              style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #ddd' }}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 8,
+                border: '1px solid #ddd',
+              }}
             />
           </div>
         </section>
       )}
 
-      <div style={{ marginTop: 24, display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+      {/* === RSVP buttons === */}
+      <div
+        style={{
+          display: 'flex',
+          gap: 12,
+          justifyContent: 'center',
+          flexWrap: 'wrap',
+        }}
+      >
         <button
           onClick={() => sendRSVP('join')}
           disabled={busy}
@@ -131,6 +152,7 @@ export default function InviteClient({ inviteId }: { inviteId: string }) {
         >
           I’m in
         </button>
+
         <button
           onClick={() => sendRSVP('maybe')}
           disabled={busy}
@@ -145,6 +167,7 @@ export default function InviteClient({ inviteId }: { inviteId: string }) {
         >
           Maybe
         </button>
+
         <button
           onClick={() => sendRSVP('decline')}
           disabled={busy}
@@ -162,11 +185,23 @@ export default function InviteClient({ inviteId }: { inviteId: string }) {
         </button>
       </div>
 
+      {/* === Confirmation message === */}
       {state && (
-        <p style={{ marginTop: 16, color: '#0070f3', fontWeight: 600, textAlign: 'center' }}>
-          {state === 'join' ? 'Great — see you there!' : state === 'maybe' ? 'Got it — maybe!' : 'No worries, thanks for replying!'}
+        <p
+          style={{
+            marginTop: 16,
+            color: '#0070f3',
+            fontWeight: 600,
+            textAlign: 'center',
+          }}
+        >
+          {state === 'join'
+            ? 'Great — see you there!'
+            : state === 'maybe'
+            ? 'Got it — maybe!'
+            : 'No worries, thanks for replying!'}
         </p>
       )}
-    </>
+    </div>
   );
 }
