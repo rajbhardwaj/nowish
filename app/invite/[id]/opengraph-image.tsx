@@ -1,160 +1,131 @@
-/* app/invite/[id]/opengraph-image.tsx */
+// app/invite/[id]/opengraph-image.tsx
 import { ImageResponse } from 'next/og';
 import { createClient } from '@supabase/supabase-js';
 
-// Edge is faster for crawlers like Apple Messages/Twitter
 export const runtime = 'edge';
-export const alt = 'Nowish Invite';
-export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
+export const size = { width: 1200, height: 630 };
 
-// ---- tiny helpers ----
-const timeout = (ms: number) =>
-  new Promise((_r, rej) => setTimeout(() => rej(new Error('timeout')), ms));
+type InviteRow = {
+  id: string;
+  title: string;
+  window_start: string; // ISO string in DB
+  window_end: string;   // ISO string in DB
+  host_name: string | null;
+};
 
-function fmtWhen(start?: string | null, end?: string | null) {
-  if (!start || !end) return 'Happening soon';
-  const s = new Date(start);
-  const e = new Date(end);
+function formatWhen(startISO: string, endISO: string): string {
+  const start = new Date(startISO);
+  const end = new Date(endISO);
 
-  const sameDay = s.toDateString() === e.toDateString();
-  const fmtDay = new Intl.DateTimeFormat('en-US', {
+  const sameDay =
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === end.getMonth() &&
+    start.getDate() === end.getDate();
+
+  const dateFmt = new Intl.DateTimeFormat('en-US', {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
-  }).format(s);
+  }).format(start);
 
-  const fmtTime = new Intl.DateTimeFormat('en-US', {
+  const timeFmt = new Intl.DateTimeFormat('en-US', {
     hour: 'numeric',
     minute: '2-digit',
   });
 
-  const sT = fmtTime.format(s);
-  const eT = fmtTime.format(e);
+  const startTime = timeFmt.format(start);
+  const endTime = timeFmt.format(end);
 
-  if (sameDay) return `${fmtDay} • ${sT} — ${eT}`;
-  const eDay = new Intl.DateTimeFormat('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  }).format(e);
-  return `${fmtDay} ${sT} → ${eDay} ${eT}`;
+  return sameDay
+    ? `${dateFmt} • ${startTime} — ${endTime}`
+    : `${dateFmt} • ${startTime} → ${new Intl.DateTimeFormat('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      }).format(end)}`;
 }
 
-function card({
-  title,
-  when,
-  host,
-}: {
-  title: string;
-  when: string;
-  host?: string | null;
-}) {
-  return new ImageResponse(
-    (
-      <div
-        style={{
-          width: '1200px',
-          height: '630px',
-          display: 'flex',
-          background:
-            'linear-gradient(135deg, rgb(12,16,24) 0%, rgb(22,28,40) 100%)',
-          color: 'white',
-          fontFamily: 'Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI',
-          padding: '64px',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '20px',
-            width: '100%',
-            height: '100%',
-            justifyContent: 'space-between',
-          }}
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div
-              style={{
-                fontSize: 64,
-                fontWeight: 800,
-                lineHeight: 1.1,
-                letterSpacing: '-0.02em',
-              }}
-            >
-              {title}
-            </div>
-            <div
-              style={{
-                fontSize: 30,
-                opacity: 0.9,
-                display: 'flex',
-                gap: '16px',
-                alignItems: 'center',
-              }}
-            >
-              <span>{when}</span>
-              {host ? (
-                <>
-                  <span style={{ opacity: 0.5 }}>•</span>
-                  <span>from {host}</span>
-                </>
-              ) : null}
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              fontSize: 28,
-              opacity: 0.9,
-            }}
-          >
-            <span>Tap to RSVP →</span>
-            <span style={{ opacity: 0.6 }}>nowish.vercel.app</span>
-          </div>
-        </div>
-      </div>
-    ),
-    size
-  );
-}
-
-export default async function OpengraphImage({
+export default async function Image({
   params,
 }: {
   params: { id: string };
 }) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  const supabase = createClient(url, anon);
+  // Minimal supabase client for read-only fetch
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: { persistSession: false },
+  });
 
-  let title = 'Nowish Invite';
-  let when = 'Happening soon';
-  let host: string | null | undefined = null;
+  // Fetch invite
+  const { data, error } = await supabase
+    .from('open_invites')
+    .select('id,title,window_start,window_end,host_name')
+    .eq('id', params.id)
+    .maybeSingle<InviteRow>();
 
-  try {
-    // keep the route snappy; bail to generic after ~1200ms
-    const { data } = (await Promise.race([
-      supabase
-        .from('open_invites')
-        .select('title, window_start, window_end, host_name')
-        .eq('id', params.id)
-        .maybeSingle(),
-      timeout(1200),
-    ])) as { data?: any };
+  // Fallbacks if not found
+  const title = data?.title ?? 'Nowish Invite';
+  const when =
+    data ? formatWhen(data.window_start, data.window_end) : 'Happening soon';
+  const host = data?.host_name ?? null;
 
-    if (data) {
-      title = data.title || title;
-      when = fmtWhen(data.window_start, data.window_end);
-      host = data.host_name;
-    }
-  } catch {
-    // swallow – we'll render a generic card
-  }
+  // Simple dark card
+  return new ImageResponse(
+    (
+      <div
+        style={{
+          width: size.width,
+          height: size.height,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          padding: 56,
+          background:
+            'radial-gradient(1200px 600px at 0% 0%, #0e1628 0%, #0b1220 40%, #0a0f1a 100%)',
+          color: 'white',
+          fontFamily:
+            'ui-sans-serif, -apple-system, Segoe UI, Roboto, Helvetica, Arial, Apple Color Emoji, Segoe UI Emoji',
+        }}
+      >
+        {/* Header */}
+        <div style={{ fontSize: 28, opacity: 0.8 }}>Nowish</div>
 
-  return card({ title, when, host });
+        {/* Title + time */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div
+            style={{
+              fontSize: 74,
+              fontWeight: 700,
+              lineHeight: 1.1,
+              letterSpacing: -1,
+            }}
+          >
+            {title}
+          </div>
+          <div style={{ fontSize: 32, opacity: 0.9 }}>{when}</div>
+          {host ? (
+            <div style={{ fontSize: 28, opacity: 0.8 }}>from {host}</div>
+          ) : null}
+        </div>
+
+        {/* Footer row */}
+        <div
+          style={{
+            display: 'flex',
+            width: '100%',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <div style={{ fontSize: 28, opacity: 0.9 }}>Tap to RSVP →</div>
+          <div style={{ fontSize: 24, opacity: 0.6 }}>nowish.vercel.app</div>
+        </div>
+      </div>
+    ),
+    { width: size.width, height: size.height }
+  );
 }
