@@ -18,34 +18,21 @@ function formatWhen(startISO: string, endISO: string): string {
   const start = new Date(startISO);
   const end = new Date(endISO);
 
-  const sameDay =
-    start.getFullYear() === end.getFullYear() &&
-    start.getMonth() === end.getMonth() &&
-    start.getDate() === end.getDate();
-
-  const dateFmt = new Intl.DateTimeFormat('en-US', {
+  const opts: Intl.DateTimeFormatOptions = {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
-  }).format(start);
-
-  const timeFmt = new Intl.DateTimeFormat('en-US', {
     hour: 'numeric',
     minute: '2-digit',
-  });
-
-  const startTime = timeFmt.format(start);
-  const endTime = timeFmt.format(end);
-
-  return sameDay
-    ? `${dateFmt} • ${startTime} — ${endTime}`
-    : `${dateFmt} • ${startTime} → ${new Intl.DateTimeFormat('en-US', {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-      }).format(end)}`;
+  };
+  
+  const startFormatted = new Intl.DateTimeFormat(undefined, opts).format(start);
+  const endFormatted = new Intl.DateTimeFormat(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(end);
+  
+  return `${startFormatted} to ${endFormatted}`;
 }
 
 export default async function Image({
