@@ -1,146 +1,270 @@
+/* app/create/page.tsx */
 'use client';
 
-import { useState } from 'react';
-import { createClient, type User } from '@supabase/supabase-js';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+type Circle = 'Close Friends' | 'Family' | 'Coworkers' | 'Acquaintances';
 
-// Safely derive a display name from the Supabase user object without `any`
-function getHostName(user: User | null): string {
-  if (!user) return 'A friend';
+function parseNatural(text: string) {
+  // same parser you had before (shortened here)
+  const lower = text.toLowerCase();
+  const now = new Date();
+  const today = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    12,
+    0,
+    0,
+    0
+  );
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
 
-  const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
+  let dayRef: Date | null = null;
+  if (/\btoday\b/.test(lower)) dayRef = today;
+  if (/\btomorrow\b/.test(lower)) dayRef = tomorrow;
 
-  const fullName =
-    typeof meta.full_name === 'string' ? meta.full_name : undefined;
-  const name =
-    typeof meta.name === 'string' ? meta.name : undefined;
+  const hm = lower.match(/(\d{1,2})(?::(\d{2}))?\s*-\s*(\d{1,2})(?::(\d{2}))?\s*([ap])?m?/);
+  const hm2 = lower.match(/(\d{1,2})(?::(\d{2}))?\s*([ap])m?\s*(?:to|–|-)\s*(\d{1,2})(?::(\d{2}))?\s*([ap])m?/);
+  const noon = /\bnoon\b/.test(lower);
+  const evening = /\bevening\b/.test(lower);
 
-  if (fullName && fullName.trim().length > 0) return fullName.trim();
-  if (name && name.trim().length > 0) return name.trim();
-
-  if (typeof user.email === 'string' && user.email.includes('@')) {
-    const left = user.email.split('@')[0]!;
-    if (left.trim().length > 0) return left.trim();
+  function makeDate(base: Date, h: number, m: number, mer?: string) {
+    let hour = h;
+    if (mer === 'p' && hour < 12) hour += 12;
+    if (mer === 'a' && hour === 12) hour = 0;
+    const d = new Date(base);
+    d.setHours(hour, m, 0, 0);
+    return d;
   }
-  return 'A friend';
+
+  let window_start: Date | null = null;
+  let window_end: Date | null = null;
+
+  const base = dayRef ?? today;
+
+  if (hm || hm2) {
+    const m = hm ?? hm2!;
+    const sH = parseInt(m[1]!, 10);
+    const sM = m[2] ? parseInt(m[2]!, 10) : 0;
+    const eH = parseInt(m[hm ? 3 : 4]!, 10);
+    const eM = (hm ? m[4] : m[5]) ? parseInt((hm ? m[4] : m[5])!, 10) : 0;
+    const mer = (hm ? m[5] : m[6]) as 'a' | 'p' | undefined;
+
+    window_start = makeDate(base, sH, sM, mer);
+    // If no meridian on end, infer from start
+    const endMer = mer ?? (sH <= 8 ? 'p' : 'a'); // crude inference
+    window_end = makeDate(base, eH, eM, endMer);
+  } else if (noon && dayRef) {
+    window_start = new Date(dayRef);
+    window_start.setHours(12, 0, 0, 0);
+    window_end = new Date(window_start);
+    window_end.setHours(13, 0, 0, 0);
+  } else if (evening && dayRef) {
+    window_start = new Date(dayRef);
+    window_start.setHours(18, 0, 0, 0);
+    window_end = new Date(window_start);
+    window_end.setHours(20, 0, 0, 0);
+  } else {
+    // fallback 2h window from now
+    window_start = new Date();
+    window_end = new Date();
+    window_end.setHours(window_start.getHours() + 2);
+  }
+
+  // Title = input stripped of time words
+  const cleaned = text
+    .replace(/\btoday\b|\btomorrow\b|\bnoon\b|\bevening\b/gi, '')
+    .replace(/\d{1,2}(?::\d{2})?\s*[-–to]+\s*\d{1,2}(?::\d{2})?\s*([ap])?m?/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+
+  const title = cleaned.length ? cleaned : 'Hangout';
+
+  return {
+    title,
+    window_start: window_start.toISOString(),
+    window_end: window_end.toISOString(),
+  };
 }
 
-// Parse a local datetime string to ISO, guarding against invalid input
-function toISO(dtLocal: string): string {
-  const d = new Date(dtLocal);
-  if (isNaN(d.getTime())) {
-    // Fallback: now
-    return new Date().toISOString();
-  }
-  return d.toISOString();
-}
+export default function CreatePage() {
+  const [supabase] = useState(() =>
+    createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+  );
 
-export default function CreateInvitePage() {
-  const router = useRouter();
-  const [title, setTitle] = useState('');
-  const [startTime, setStartTime] = useState(''); // yyyy-MM-ddTHH:mm
-  const [endTime, setEndTime] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [checked, setChecked] = useState(false);
 
-  async function handleCreateInvite(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setLoading(true);
-    setErrorMsg(null);
+  const [what, setWhat] = useState('');
+  const [circle, setCircle] = useState<Circle>('Close Friends');
 
+  const [createdId, setCreatedId] = useState<string | null>(null);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const check = async () => {
+      const { data, error } = await supabase.auth.getSession();
+      if (!error && data.session?.user?.email) {
+        setUserEmail(data.session.user.email);
+      }
+      setChecked(true);
+    };
+    check();
+  }, [supabase]);
+
+  if (!checked) return null;
+  if (!userEmail)
+    return (
+      <div className="p-6">
+        <h1 className="text-3xl font-bold">Create an Invite</h1>
+        <p className="mt-2 text-sm text-neutral-500">
+          Please sign in to create invites.
+        </p>
+      </div>
+    );
+
+  const onCreate = async () => {
+    const parsed = parseNatural(what);
+
+    // fetch or upsert profile to get host name (best effort)
+    let host_name: string | null = null;
     try {
-      // Current user
-      const { data: userRes, error: userErr } = await supabase.auth.getUser();
-      if (userErr) throw userErr;
-      const user = userRes?.user ?? null;
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('id', (await supabase.auth.getUser()).data.user?.id)
+        .maybeSingle();
+      host_name = prof?.display_name ?? null;
+    } catch {}
 
-      const hostName = getHostName(user);
+    const insert = {
+      title: parsed.title,
+      circle: circle as string,
+      window_start: parsed.window_start,
+      window_end: parsed.window_end,
+      host_name,
+    };
 
-      // Times → ISO
-      const startISO = toISO(startTime);
-      const endISO = toISO(endTime);
+    const { data, error } = await supabase
+      .from('open_invites')
+      .insert(insert)
+      .select('id')
+      .single();
 
-      // Insert invite
-      const { data, error } = await supabase
-        .from('open_invites')
-        .insert({
-          title,
-          window_start: startISO,
-          window_end: endISO,
-          creator_id: user?.id ?? null,
-          host_name: hostName, // 👈 store the host
-        })
-        .select('id')
-        .single();
-
-      if (error) throw error;
-
-      router.push(`/invite/${data.id}`);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error(err);
-      setErrorMsg(msg || 'Something went wrong.');
-    } finally {
-      setLoading(false);
+    if (error) {
+      alert(error.message);
+      return;
     }
-  }
+
+    setCreatedId(data.id);
+
+    // Build a sharable URL with a short cache-buster so iMessage refetches the OG image
+    const origin =
+      typeof window !== 'undefined'
+        ? window.location.origin
+        : 'https://nowish.vercel.app';
+    const cacheBuster = Math.floor(Date.now() / 1000); // short and stable enough
+    const url = `${origin}/invite/${data.id}?v=${cacheBuster}`;
+    setShareUrl(url);
+  };
+
+  const onShare = async () => {
+    if (!shareUrl) return;
+    const text = shareUrl;
+    if (navigator.share) {
+      try {
+        await navigator.share({ text, url: shareUrl });
+      } catch {
+        // ignore
+      }
+    } else {
+      await navigator.clipboard.writeText(text);
+      alert('Link copied!');
+    }
+  };
 
   return (
-    <main className="max-w-md mx-auto mt-12 px-4">
-      <h1 className="text-2xl font-semibold mb-6">Create an Invite</h1>
+    <div className="p-6 max-w-xl mx-auto space-y-6">
+      <div className="rounded-md bg-neutral-100 text-neutral-700 px-4 py-2 text-sm">
+        You are signed in as <b>{userEmail}</b>
+      </div>
 
-      <form onSubmit={handleCreateInvite} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">Title</label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Park with kids, pickup soccer, coffee…"
-            className="w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-            required
-          />
+      <h1 className="text-4xl font-bold">Create an Invite</h1>
+
+      {!createdId ? (
+        <div className="space-y-5">
+          <div>
+            <label className="block text-lg font-medium mb-2">
+              What are you doing?
+            </label>
+            <input
+              className="w-full rounded-md border px-3 py-2"
+              placeholder='e.g. "Park with kids, 3–5p today"'
+              value={what}
+              onChange={(e) => setWhat(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="block text-lg font-medium mb-2">
+              Who’s this for?
+            </label>
+            <select
+              className="w-full rounded-md border px-3 py-2"
+              value={circle}
+              onChange={(e) => setCircle(e.target.value as Circle)}
+            >
+              <option>Close Friends</option>
+              <option>Family</option>
+              <option>Coworkers</option>
+              <option>Acquaintances</option>
+            </select>
+          </div>
+
+          <button
+            className="inline-flex items-center gap-2 rounded-md bg-black text-white px-4 py-2"
+            onClick={onCreate}
+            disabled={!what.trim()}
+          >
+            Create Invite
+          </button>
         </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1">Start Time</label>
-          <input
-            type="datetime-local"
-            value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
-            className="w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-            required
-          />
+      ) : (
+        <div className="space-y-4">
+          <div className="text-xl font-semibold">Invite created!</div>
+          <div className="text-sm text-neutral-500">
+            Share this link (includes a tiny cache-buster so previews refresh):
+          </div>
+          <pre className="whitespace-pre-wrap break-words rounded-md bg-neutral-100 p-3 text-sm">
+            {shareUrl}
+          </pre>
+          <div className="flex items-center gap-3">
+            <a
+              className="underline"
+              href={shareUrl ?? '#'}
+              target="_blank"
+              rel="noreferrer"
+            >
+              View invite →
+            </a>
+            <button
+              className="rounded-md border px-3 py-1.5"
+              onClick={onShare}
+            >
+              Share
+            </button>
+            <a className="underline" href="/my">
+              See my invites
+            </a>
+          </div>
         </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1">End Time</label>
-          <input
-            type="datetime-local"
-            value={endTime}
-            onChange={(e) => setEndTime(e.target.value)}
-            className="w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
-            required
-          />
-        </div>
-
-        {errorMsg && (
-          <div className="text-red-600 text-sm">{errorMsg}</div>
-        )}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-2 px-4 bg-indigo-600 text-white font-medium rounded-md hover:bg-indigo-700 disabled:opacity-50"
-        >
-          {loading ? 'Creating…' : 'Create Invite'}
-        </button>
-      </form>
-    </main>
+      )}
+    </div>
   );
 }

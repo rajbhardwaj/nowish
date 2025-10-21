@@ -37,6 +37,14 @@ export const viewport = {
   initialScale: 1,
 };
 
+robots: {
+    index: true,
+    follow: true,
+    // helps Apple/Twitter
+    'user-agent': '*',
+    allow: '/',
+  },
+
 export default function RootLayout({
   children,
 }: Readonly<{
