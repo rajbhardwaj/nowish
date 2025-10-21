@@ -1,7 +1,7 @@
 // app/invite/[id]/page.tsx
 import { createClient } from '@supabase/supabase-js';
 import { notFound } from 'next/navigation';
-import InvitePage from './InvitePage';
+import InviteClient from './InviteClient'; // <-- use the file you already have
 
 const supabaseServer = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -87,7 +87,7 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
   };
 }
 
-// ---- Page component ----
+// ---- Page component (server) ----
 export default async function Page({ params }: { params: { id: string } }) {
   const { data: invite } = await supabaseServer
     .from('open_invites')
@@ -97,5 +97,6 @@ export default async function Page({ params }: { params: { id: string } }) {
 
   if (!invite) return notFound();
 
-  return <InvitePage invite={invite} />;
+  // Render the interactive client component
+  return <InviteClient invite={invite} />;
 }
