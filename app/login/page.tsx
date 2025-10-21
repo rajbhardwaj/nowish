@@ -1,4 +1,5 @@
 'use client';
+
 import { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 
@@ -9,12 +10,18 @@ export default function LoginPage() {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     const base = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
-    await supabase.auth.signInWithOtp({
+
+    const { data, error } = await supabase.auth.signInWithOtp({
       email,
       options: { emailRedirectTo: `${base}/auth/callback?next=/create` },
     });
-    if (error) alert(error.message);
-    else setSent(true);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+    // Optionally inspect data if you want
+    setSent(true);
   }
 
   return (
@@ -22,7 +29,7 @@ export default function LoginPage() {
       <h1>Nowish ⚡️</h1>
       {!sent ? (
         <form onSubmit={handleLogin}>
-          <p>Enter your email to get a magic link:</p>
+          <p>Enter your email to get a magic link.</p>
           <input
             type="email"
             value={email}
@@ -34,7 +41,7 @@ export default function LoginPage() {
           <button type="submit" style={{ marginTop: 12 }}>Send Magic Link</button>
         </form>
       ) : (
-        <p>Check your inbox and click the link to sign in.</p>
+        <p>Check your inbox! Click the link to sign in.</p>
       )}
     </main>
   );
