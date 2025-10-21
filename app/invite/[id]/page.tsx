@@ -55,17 +55,26 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
   const title = invite?.title ? `Nowish: ${invite.title}` : 'Nowish Invite';
   const when = formatWhen(invite?.window_start, invite?.window_end);
-  const ogUrl = `/invite/${id}/opengraph-image`;
+  const ogUrl = `${base}/invite/${id}/opengraph-image`;
 
   return {
     title,
     description: when,
     openGraph: {
+      type: 'website',
       title,
       description: when,
       url: `${base}/invite/${id}`,
       siteName: 'Nowish',
-      images: [{ url: ogUrl, width: 1200, height: 630, alt: 'Nowish Invite' }],
+      images: [
+        {
+          url: ogUrl,
+          width: 1200,
+          height: 630,
+          alt: 'Nowish Invite',
+          type: 'image/png',
+        },
+      ],
     },
     twitter: {
       card: 'summary_large_image',
@@ -78,7 +87,10 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       'og:image:width': '1200',
       'og:image:height': '630',
       'og:image:type': 'image/png',
-      'og:image:secure_url': `${base}${ogUrl}`,
+      'og:image:secure_url': ogUrl,
+      'og:locale': 'en_US',
+      'og:updated_time': new Date().toISOString(),
+      'og:image:alt': 'Nowish Invite',
     },
   };
 }
