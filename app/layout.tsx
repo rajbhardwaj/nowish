@@ -15,19 +15,23 @@ const geistMono = Geist_Mono({
 export const metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://nowish.vercel.app'),
   title: 'Nowish',
-  description: 'Spontaneous, lightweight invites for your real life.',
+  description: 'Make plans without planning. Spontaneous hangs that actually happen.',
   openGraph: {
     siteName: 'Nowish',
-    type: 'website',
-    url: '/',
     title: 'Nowish',
-    description: 'Spontaneous, lightweight invites for your real life.',
+    description: 'Make plans without planning. Spontaneous hangs that actually happen.',
+    images: ['/opengraph-image.png'], // Next will auto-generate fallback if present; ok to leave
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Nowish',
-    description: 'Spontaneous, lightweight invites for your real life.',
+    description: 'Make plans without planning. Spontaneous hangs that actually happen.',
   },
+  icons: {
+    icon: '/icon.png',
+    apple: '/apple-icon.png',
+  },
+  themeColor: '#0f1115',
   viewport: 'width=device-width, initial-scale=1',
 };
 

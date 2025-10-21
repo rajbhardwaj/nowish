@@ -38,7 +38,6 @@ function formatWindow(startISO?: string | null, endISO?: string | null, tz = DEF
 
 export async function generateMetadata({ params }: { params: { id: string } }) {
   const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://nowish.vercel.app';
-
   const { data: invite } = await supabaseServer
     .from('open_invites')
     .select('id, title, window_start, window_end')
@@ -46,25 +45,18 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
     .maybeSingle();
 
   const title = invite?.title ? `Nowish: ${invite.title}` : 'Nowish Invite';
-  const when = formatWindow(invite?.window_start, invite?.window_end) || 'Join this Nowish invite';
-  const ogImage = `${base}/invite/${params.id}/opengraph-image`;
+  const when = formatWindow(invite?.window_start, invite?.window_end) || 'Tap to RSVP';
+  const image = `${base}/invite/${params.id}/opengraph-image`;
 
   return {
     title,
     description: when,
     openGraph: {
-      title,
-      description: when,
-      url: `${base}/invite/${params.id}`,
+      title, description: when, url: `${base}/invite/${params.id}`,
       siteName: 'Nowish',
-      images: [ogImage],
+      images: [{ url: image, width: 1200, height: 630, alt: 'Nowish Invite' }]
     },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description: when,
-      images: [ogImage],
-    },
+    twitter: { card: 'summary_large_image', title, description: when, images: [image] }
   };
 }
 
