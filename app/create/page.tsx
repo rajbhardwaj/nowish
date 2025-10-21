@@ -109,6 +109,7 @@ export default function CreateInvitePage() {
           circle,
           host_name: hostName || sessionEmail?.split('@')[0] || 'Me',
           creator_id: userId,
+          circle_ids: [], 
         })
         .select('id')
         .single();
