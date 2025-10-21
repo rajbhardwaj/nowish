@@ -13,15 +13,12 @@ export default function CreateInvitePage() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
 
-  // form
   const [details, setDetails] = useState('');
   const [circleName, setCircleName] = useState<'Family' | 'Close Friends' | 'Coworkers'>('Family');
 
-  // result
   const [createdId, setCreatedId] = useState<string | null>(null);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
 
-  // 1) Check session once
   useEffect(() => {
     (async () => {
       const { data, error } = await supabase.auth.getSession();
@@ -35,7 +32,6 @@ export default function CreateInvitePage() {
     })();
   }, [router]);
 
-  // 2) Ensure a circle exists for this user + name
   async function ensureCircle(ownerId: string, name: string): Promise<string> {
     const { data: existing } = await supabase
       .from('circles')
@@ -58,14 +54,12 @@ export default function CreateInvitePage() {
     return inserted.id as string;
   }
 
-  // 3) Submit
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!userId) return alert('Not signed in.');
     const text = details.trim();
     if (!text) return alert('Please describe what you’re doing');
 
-    // make sure the circle exists
     let circleId: string;
     try {
       circleId = await ensureCircle(userId, circleName);
@@ -75,16 +69,14 @@ export default function CreateInvitePage() {
       return;
     }
 
-    // create invite
     const { data, error } = await supabase
       .from('open_invites')
       .insert({
         creator_id: userId,
-        title: text,                 // keep it simple: store the whole line as title
+        title: text,
         location_text: null,
         chips: [],
         circle_ids: [circleId],
-        // you can add window_start/window_end later when you add parsing
       })
       .select('id')
       .single<InviteRow>();
@@ -125,18 +117,25 @@ export default function CreateInvitePage() {
       {!createdId ? (
         <form onSubmit={handleSubmit}>
           <label style={{ display: 'block', marginBottom: 8 }}>What are you doing?</label>
-          <textarea
+          <input
+            type="text"
             value={details}
             onChange={(e) => setDetails(e.target.value)}
             placeholder="E.g. Park with kids, 3–5pm today"
-            style={{ width: '100%', minHeight: 100, marginBottom: 12 }}
+            style={{
+              width: '100%',
+              marginBottom: 12,
+              padding: '8px 10px',
+              borderRadius: 6,
+              border: '1px solid #ccc',
+            }}
           />
 
           <label style={{ display: 'block', marginBottom: 8 }}>Who’s this for?</label>
           <select
             value={circleName}
             onChange={(e) => setCircleName(e.target.value as typeof circleName)}
-            style={{ width: '100%', marginBottom: 16 }}
+            style={{ width: '100%', marginBottom: 16, padding: '8px 10px' }}
           >
             <option value="Family">Family</option>
             <option value="Close Friends">Close Friends</option>
