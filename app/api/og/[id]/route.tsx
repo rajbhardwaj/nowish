@@ -1,5 +1,5 @@
-// app/api/og/[id]/route.tsx
 import { ImageResponse } from 'next/og';
+import type { NextRequest } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 export const runtime = 'edge';
@@ -12,25 +12,33 @@ const supabase = createClient(
 
 const DEFAULT_TZ = process.env.NEXT_PUBLIC_DEFAULT_TZ || 'America/Chicago';
 
-function fmt(startISO?: string|null, endISO?: string|null, tz = DEFAULT_TZ) {
+function fmt(startISO?: string | null, endISO?: string | null, tz = DEFAULT_TZ) {
   if (!startISO || !endISO) return 'Happening soon — tap to RSVP';
   const start = new Date(startISO);
   const end = new Date(endISO);
   const d = new Intl.DateTimeFormat('en-US', { timeZone: tz, dateStyle: 'medium' }).format(start);
   const t = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeStyle: 'short' });
   const same =
-    new Intl.DateTimeFormat('en-CA',{ timeZone: tz, dateStyle:'short' }).format(start) ===
-    new Intl.DateTimeFormat('en-CA',{ timeZone: tz, dateStyle:'short' }).format(end);
+    new Intl.DateTimeFormat('en-CA', { timeZone: tz, dateStyle: 'short' }).format(start) ===
+    new Intl.DateTimeFormat('en-CA', { timeZone: tz, dateStyle: 'short' }).format(end);
   return same
     ? `${d} • ${t.format(start)} – ${t.format(end)}`
-    : `${d} ${t.format(start)} → ${new Intl.DateTimeFormat('en-US',{ timeZone: tz, dateStyle:'medium' }).format(end)} ${t.format(end)}`;
+    : `${d} ${t.format(start)} → ${new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        dateStyle: 'medium',
+      }).format(end)} ${t.format(end)}`;
 }
 
-export async function GET(_: Request, { params }: { params: { id: string } }) {
+export async function GET(
+  _req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  const { id } = await context.params;
+
   const { data: invite } = await supabase
     .from('open_invites')
     .select('title, window_start, window_end')
-    .eq('id', params.id)
+    .eq('id', id)
     .maybeSingle();
 
   const title = invite?.title || 'Nowish Invite';
@@ -48,27 +56,48 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
           padding: '56px',
           background: 'linear-gradient(135deg,#0f1115 0%,#1c1f25 60%,#0f1115 100%)',
           color: '#fff',
-          fontFamily: 'ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial',
+          fontFamily:
+            'ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial',
         }}
       >
-        <div style={{ display:'flex', alignItems:'center', gap:16, opacity:.92 }}>
-          <div style={{
-            width:44, height:44, borderRadius:12,
-            background:'linear-gradient(225deg,#6ee7b7 0%,#3b82f6 100%)',
-            display:'flex', alignItems:'center', justifyContent:'center',
-            fontWeight:800, fontSize:28, color:'#0b1020'
-          }}>N</div>
-          <div style={{ fontSize:38, fontWeight:800, letterSpacing:.3 }}>Nowish</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, opacity: 0.92 }}>
+          <div
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 12,
+              background: 'linear-gradient(225deg,#6ee7b7 0%,#3b82f6 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 800,
+              fontSize: 28,
+              color: '#0b1020',
+            }}
+          >
+            N
+          </div>
+          <div style={{ fontSize: 38, fontWeight: 800, letterSpacing: 0.3 }}>Nowish</div>
         </div>
-        <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
-          <div style={{ fontSize:80, lineHeight:1.05, fontWeight:900, maxWidth:1000, wordBreak:'break-word' }}>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          <div
+            style={{
+              fontSize: 80,
+              lineHeight: 1.05,
+              fontWeight: 900,
+              maxWidth: 1000,
+              wordBreak: 'break-word',
+            }}
+          >
             {title}
           </div>
-          <div style={{ fontSize:36, opacity:.9 }}>{when}</div>
+          <div style={{ fontSize: 36, opacity: 0.9 }}>{when}</div>
         </div>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-          <div style={{ fontSize:28, opacity:.8 }}>Tap to RSVP →</div>
-          <div style={{ fontSize:28, opacity:.7 }}>nowish.vercel.app</div>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontSize: 28, opacity: 0.8 }}>Tap to RSVP →</div>
+          <div style={{ fontSize: 28, opacity: 0.7 }}>nowish.vercel.app</div>
         </div>
       </div>
     ),
@@ -77,7 +106,6 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
       height: 630,
       headers: {
         'Content-Type': 'image/png',
-        // help scrapers cache for a bit
         'Cache-Control': 'public, max-age=600, s-maxage=600, stale-while-revalidate=86400',
       },
     }
