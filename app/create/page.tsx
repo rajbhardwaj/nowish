@@ -1,345 +1,322 @@
-// app/create/page.tsx
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { createClient, PostgrestSingleResponse } from '@supabase/supabase-js';
-import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
+import { createClient } from '@supabase/supabase-js';
 
 type Circle = 'Family' | 'Close Friends' | 'Coworkers';
-
-type ParsedRange = {
-  title: string;
-  start: Date | null;
-  end: Date | null;
-};
-
-type OpenInviteInsert = {
-  id?: string;
-  creator_id: string;
-  title: string;
-  window_start: string; // ISO
-  window_end: string;   // ISO
-  host_name: string | null;
-  circle_ids: string[]; // required by your DB
-  circle?: Circle | null; // legacy / display
-};
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-const CIRCLES: Circle[] = ['Family', 'Close Friends', 'Coworkers'];
+// ---------- small helpers ----------
+function emailHandle(email: string) {
+  const i = email.indexOf('@');
+  return i > 0 ? email.slice(0, i) : email;
+}
 
+function titleFromRaw(raw: string) {
+  // Strip common time words/spans so the title looks clean
+  const cleaned = raw
+    .replace(/\b(today|tomorrow|tonight)\b/gi, '')
+    .replace(/\bfrom\b.*$/i, '')
+    .replace(/\b\d{1,2}(:\d{2})?\s?(-|to|–|—)\s?\d{1,2}(:\d{2})?\s?(am|pm|a|p)?/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return cleaned.length ? cleaned : raw.trim();
+}
+
+function fmtRange(start: Date, end: Date) {
+  const sameDay =
+    start.getFullYear() === end.getFullYear() &&
+    start.getMonth() === end.getMonth() &&
+    start.getDate() === end.getDate();
+
+  const day = new Intl.DateTimeFormat('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  }).format(start);
+
+  const t = new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+
+  return sameDay ? `${day} • ${t.format(start)} — ${t.format(end)}` : `${t.format(start)} — ${t.format(end)}`;
+}
+
+// ---------- component ----------
 export default function CreateInvitePage() {
-  const router = useRouter();
-
-  // --- session / host ------------------------------------
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [hostName, setHostName] = useState<string>('');
-  const [sessionChecked, setSessionChecked] = useState(false);
-
-  useEffect(() => {
-    const check = async () => {
-      const { data } = await supabase.auth.getSession();
-      const email = data.session?.user?.email ?? null;
-      setUserEmail(email);
-      // default hostName to the email handle if empty
-      if (email && !hostName) {
-        const handle = email.split('@')[0];
-        setHostName(handle);
-      }
-      setSessionChecked(true);
-    };
-    check();
-  }, [hostName]);
-
-  // --- form state ----------------------------------------
   const [raw, setRaw] = useState('');
   const [circle, setCircle] = useState<Circle>('Family');
+  const [hostName, setHostName] = useState('');
+  const [signedInAs, setSignedInAs] = useState<string | null>(null);
+
+  // chrono loaded on the client only
+  const [chronoMod, setChronoMod] = useState<typeof import('chrono-node') | null>(null);
+
+  // live-parse state
+  const [liveStart, setLiveStart] = useState<Date | null>(null);
+  const [liveEnd, setLiveEnd] = useState<Date | null>(null);
+
+  // saving state
   const [creating, setCreating] = useState(false);
-  const [link, setLink] = useState<string | null>(null);
+  const [createdLink, setCreatedLink] = useState<string | null>(null);
 
-  // --- parse “what are you doing?” -----------------------
-  const parsed = useMemo<ParsedRange>(() => {
-    const fallback: ParsedRange = { title: raw.trim(), start: null, end: null };
-    if (!raw.trim()) return { title: '', start: null, end: null };
+  // fetch current user for defaults
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      const email = data.user?.email ?? null;
+      setSignedInAs(email);
+      if (email && !hostName) setHostName(emailHandle(email));
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Lazy-load chrono so builds don’t fail if module format changes
-    // We can’t await inside useMemo, so we do a quick sync guess here
-    // and refine right before submit (see handleCreate).
-    try {
-      const now = new Date();
-      // very small, naive inline parse to show preview until chrono refines
-      // Look for “x–yp today/tomorrow/noon/etc.” – if not found, we’ll just show title.
-      // (Real parse happens at submit.)
-      const simple = raw
-        .replace(/\s+/g, ' ')
-        .trim();
-
-      // Pull a rough title before any comma/ at/ from
-      const parts = simple.split(/(?:,| from | @ )/i);
-      const titleGuess = parts[0] || simple;
-
-      return { title: titleGuess, start: null, end: null };
-    } catch {
-      return fallback;
-    }
-  }, [raw]);
-
-  const previewText = useMemo(() => {
-    if (!raw.trim()) return 'add a time so we can parse it';
-    // We only have a title here; real times will be shown after parsing
-    return parsed.title || 'add a time so we can parse it';
-  }, [parsed.title, raw]);
-
-  // ---- map circle → circle_ids --------------------------
-  // If/when you introduce real circle IDs, replace this mapping with your query.
-  function circleToIds(c: Circle): string[] {
-    // Temporary deterministic IDs based on the label so DB NOT NULL is satisfied.
-    const map: Record<Circle, string[]> = {
-      Family: ['circle_family'],
-      'Close Friends': ['circle_close_friends'],
-      Coworkers: ['circle_coworkers'],
+  // load chrono once (client)
+  useEffect(() => {
+    let mounted = true;
+    import('chrono-node')
+      .then((m) => mounted && setChronoMod(m))
+      .catch(() => {
+        // if chrono fails to load (shouldn't), we just won't live-parse
+      });
+    return () => {
+      mounted = false;
     };
-    return map[c] ?? ['circle_unknown'];
-  }
+  }, []);
 
-  // ---- chrono parse (real) ------------------------------
-  async function parseWithChrono(input: string): Promise<ParsedRange> {
-    const baseTitle = input.trim();
-    let title = baseTitle;
-    let start: Date | null = null;
-    let end: Date | null = null;
+  // live parsing (debounced)
+  useEffect(() => {
+    if (!chronoMod) return;
+    if (!raw.trim()) {
+      setLiveStart(null);
+      setLiveEnd(null);
+      return;
+    }
+    const id = setTimeout(() => {
+      const results = chronoMod.parse(raw, new Date(), { forwardDate: true });
+      if (!results.length) {
+        setLiveStart(null);
+        setLiveEnd(null);
+        return;
+      }
+      const r = results[0];
+      const s = r.start?.date() ?? null;
+      const e = r.end?.date() ?? (s ? new Date(s.getTime() + 60 * 60 * 1000) : null);
+      setLiveStart(s ?? null);
+      setLiveEnd(e ?? null);
+    }, 160);
+    return () => clearTimeout(id);
+  }, [raw, chronoMod]);
+
+  const previewTitle = useMemo(() => (raw.trim() ? titleFromRaw(raw) : ''), [raw]);
+
+  const previewWhen = useMemo(() => {
+    if (liveStart && liveEnd) return fmtRange(liveStart, liveEnd);
+    return 'add a time so we can parse it';
+  }, [liveStart, liveEnd]);
+
+  const canSubmit = !!raw.trim() && !!liveStart && !!liveEnd;
+
+  async function handleCreate() {
+    if (!canSubmit) return;
 
     try {
-      // ESM import at runtime (avoids “default export doesn’t exist” errors)
-      const chrono = await import('chrono-node');
-      // Try to split a title prefix before time phrases (comma helps)
-      const firstComma = input.indexOf(',');
-      if (firstComma > 0) {
-        title = input.slice(0, firstComma).trim();
-      } else {
-        // If it starts with a time phrase and has “ at <place>”
-        const m = input.match(/^(?:today|tomorrow|tonight|noon|\d{1,2}([:.]\d{2})?\s*(?:a|p)m?|\d{1,2}\s*-\s*\d{1,2}\s*(?:a|p)m?)\s+at\s+(.+)/i);
-        if (m && m[2]) title = m[2].trim();
+      setCreating(true);
+      setCreatedLink(null);
+
+      // Make sure we still have a user
+      const { data: auth } = await supabase.auth.getUser();
+      const user = auth.user;
+      if (!user) {
+        alert('Please sign in.');
+        setCreating(false);
+        return;
       }
-      // Run chrono with today’s ref
-      const results = chrono.parse(input, new Date());
-      if (results?.length) {
-        const r = results[0];
-        start = r.start?.date() ?? null;
-        end = r.end?.date?.() ?? null;
-        if (!end && start) {
-          // default to 1h window if only one time found
-          end = new Date(start.getTime() + 60 * 60 * 1000);
+
+      // Reuse live parse, but if chrono failed to load for some reason,
+      // do a just-in-time parse here to be safe.
+      let start = liveStart;
+      let end = liveEnd;
+      if ((!start || !end) && !chronoMod) {
+        const cm = await import('chrono-node');
+        const res = cm.parse(raw, new Date(), { forwardDate: true });
+        if (res.length) {
+          const r = res[0];
+          start = r.start?.date() ?? null;
+          end = r.end?.date() ?? (start ? new Date(start.getTime() + 60 * 60 * 1000) : null);
         }
       }
-    } catch {
-      // ignore; we’ll fall back
-    }
-    return { title, start, end };
-  }
-
-  // ---- create -------------------------------------------
-  async function handleCreate(e: React.FormEvent) {
-    e.preventDefault();
-    if (!userEmail) {
-      alert('Please log in first.');
-      return;
-    }
-    if (!raw.trim()) {
-      alert('Tell us what you’re doing (and include a time).');
-      return;
-    }
-    setCreating(true);
-    try {
-      const refined = await parseWithChrono(raw);
-      const title = refined.title || parsed.title || raw.trim();
-      const start = refined.start;
-      const end = refined.end;
 
       if (!start || !end) {
-        alert('Could not understand the time. Try “3–5p today” or “noon tomorrow”.');
+        alert('Please include a time (for example: “Park with kids, 3–5p today”).');
         setCreating(false);
         return;
       }
 
-      // fetch user id for creator_id
-      const { data: auth } = await supabase.auth.getSession();
-      const creator_id = auth.session?.user?.id;
-      if (!creator_id) {
-        alert('Could not find your session. Please log in again.');
-        setCreating(false);
-        return;
-      }
+      const title = previewTitle || 'Hang';
+      const host = hostName.trim() || (signedInAs ? emailHandle(signedInAs) : 'Me');
 
-      const row: OpenInviteInsert = {
-        creator_id,
-        title,
-        window_start: start.toISOString(),
-        window_end: end.toISOString(),
-        host_name: hostName?.trim() || userEmail.split('@')[0],
-        circle_ids: circleToIds(circle),
-        circle, // keep for display
-      };
+      const { data, error } = await supabase
+        .from('open_invites')
+        .insert({
+          creator_id: user.id,
+          title,
+          window_start: start.toISOString(),
+          window_end: end.toISOString(),
+          host_name: host,
+          circle, // enum/text column you’re using
+        })
+        .select('id')
+        .single();
 
-      const { data, error }: PostgrestSingleResponse<{ id: string }[]> =
-        await supabase
-          .from('open_invites')
-          .insert(row)
-          .select('id');
-
-      if (error || !data || !data[0]?.id) {
+      if (error) {
         console.error('Create failed:', error);
         alert('Could not create invite.');
         setCreating(false);
         return;
       }
 
-      const id = data[0].id;
-      const base =
-        process.env.NEXT_PUBLIC_BASE_URL ?? 'https://nowish.vercel.app';
-      const url = `${base}/invite/${id}`;
-      setLink(url);
-      // don’t navigate; we stay and show share sheet + link
+      const base = process.env.NEXT_PUBLIC_BASE_URL || 'https://nowish.vercel.app';
+      const url = `${base}/invite/${data.id}`;
+      setCreatedLink(url);
+
+      // try sharesheet
+      if (typeof navigator !== 'undefined' && (navigator as any).share) {
+        try {
+          await (navigator as any).share({
+            title,
+            text: `${title} — ${previewWhen}`,
+            url,
+          });
+        } catch {
+          // user cancelled; keep link visible
+        }
+      }
     } finally {
       setCreating(false);
     }
   }
 
-  // ---- share --------------------------------------------
-  async function shareLink() {
-    if (!link) return;
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: 'Invite',
-          text: 'Come hang?',
-          url: link,
-        });
-      } else {
-        await navigator.clipboard.writeText(link);
-        alert('Link copied!');
-      }
-    } catch {
-      // user canceled share
-    }
-  }
-
-  // ---- render -------------------------------------------
-  const emailBanner = userEmail ? (
-    <div
-      className="nw-banner mb-6 rounded-lg border border-slate-200/60 bg-slate-50 px-4 py-2 text-sm text-slate-700 shadow-sm
-                 dark:border-white/10 dark:bg-slate-800/40 dark:text-slate-200"
-      style={{ maxWidth: 820, marginInline: 'auto' }}
-    >
-      You’re signed in as <strong>{userEmail}</strong>
-    </div>
-  ) : null;
-
   return (
-    <div className="px-4 py-6">
-      {sessionChecked && emailBanner}
-      <h1 className="nw-h1 mb-4">Create an invite</h1>
-      <p className="nw-subtle mb-6">
+    <div className="mx-auto max-w-screen-sm px-4 py-8">
+      {/* banner */}
+      {signedInAs && (
+        <div className="mb-6 rounded-xl border border-slate-200/60 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+          You’re signed in as <span className="font-semibold">{signedInAs}</span>
+        </div>
+      )}
+
+      <h1 className="mb-2 text-4xl font-semibold tracking-tight text-slate-900">
+        Create an invite
+      </h1>
+      <p className="mb-6 text-slate-600">
         Write it how you’d text it. We’ll parse the time.
       </p>
 
-      <form
-        onSubmit={handleCreate}
-        className="nw-card mx-auto max-w-3xl rounded-2xl border border-slate-200/70 bg-white/80 p-5 shadow
-                   backdrop-blur supports-[backdrop-filter]:bg-white/60
-                   dark:border-white/10 dark:bg-slate-900/50"
-      >
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
         {/* What */}
-        <label className="nw-label mb-2 block">What are you doing?</label>
+        <label className="mb-2 block text-base font-semibold text-slate-900">
+          What are you doing?
+        </label>
         <input
-          className="nw-input mb-2 block w-full rounded-lg border px-4 py-3
-                     focus:outline-none focus:ring-2
-                     border-slate-300 bg-white text-slate-900
-                     focus:ring-sky-500
-                     dark:border-white/15 dark:bg-slate-900 dark:text-slate-100"
+          className="mb-3 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
           placeholder={`e.g. "Park with kids, 3–5p today"`}
           value={raw}
           onChange={(e) => setRaw(e.target.value)}
-          autoComplete="off"
         />
 
-        <div className="nw-subtle mb-5 text-sm">
-          Preview: {parsed.title || 'add a time so we can parse it'}
+        <div className="mb-6 text-sm text-slate-500">
+          <span className="font-medium text-slate-600">Preview:</span>{' '}
+          {previewTitle ? `${previewTitle} — ` : null}
+          {previewWhen}
         </div>
 
         {/* Circle */}
-        <label className="nw-label mb-2 block">Who’s this for?</label>
+        <label className="mb-2 block text-base font-semibold text-slate-900">
+          Who’s this for?
+        </label>
         <select
-          className="nw-input mb-5 block w-full rounded-lg border px-3 py-2
-                     border-slate-300 bg-white text-slate-900
-                     focus:outline-none focus:ring-2 focus:ring-sky-500
-                     dark:border-white/15 dark:bg-slate-900 dark:text-slate-100"
+          className="mb-6 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
           value={circle}
           onChange={(e) => setCircle(e.target.value as Circle)}
         >
-          {CIRCLES.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
+          <option>Family</option>
+          <option>Close Friends</option>
+          <option>Coworkers</option>
         </select>
 
         {/* Host name */}
-        <label className="nw-label mb-2 block">Your name (shows on invite)</label>
+        <label className="mb-2 block text-base font-semibold text-slate-900">
+          Your name (shows on invite)
+        </label>
         <input
-          className="nw-input mb-1 block w-full rounded-lg border px-4 py-2
-                     border-slate-300 bg-white text-slate-900
-                     focus:outline-none focus:ring-2 focus:ring-sky-500
-                     dark:border-white/15 dark:bg-slate-900 dark:text-slate-100"
+          className="mb-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
+          placeholder="e.g. Raju"
           value={hostName}
           onChange={(e) => setHostName(e.target.value)}
-          placeholder={userEmail?.split('@')[0] ?? ''}
         />
-        <div className="nw-subtle mb-6 text-xs">
+        <p className="mb-6 text-sm text-slate-500">
           Optional — defaults to your email handle.
-        </div>
+        </p>
 
         {/* Actions */}
-        <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <button
-            type="submit"
-            disabled={creating}
-            className="nw-btn inline-flex items-center justify-center rounded-xl bg-sky-600 px-5 py-3 text-white shadow
-                       hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-500 disabled:opacity-60
-                       dark:bg-sky-500 dark:hover:bg-sky-400"
+            onClick={handleCreate}
+            disabled={!canSubmit || creating}
+            className={`inline-flex items-center justify-center rounded-xl px-5 py-3 text-base font-semibold text-white shadow-sm transition ${
+              !canSubmit || creating
+                ? 'bg-slate-300'
+                : 'bg-indigo-600 hover:bg-indigo-700'
+            }`}
           >
             {creating ? 'Creating…' : 'Create Invite'}
           </button>
 
-          {/* Link + Share (shows only after create) */}
-          {link ? (
-            <div className="flex flex-1 items-center gap-3">
-              <div className="text-sm text-slate-500">Link ready:</div>
-              <input
-                readOnly
-                value={link}
-                className="flex-1 truncate rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm
-                           dark:border-white/15 dark:bg-slate-800 dark:text-slate-100"
-                onFocus={(e) => e.currentTarget.select()}
-              />
-              <button
-                type="button"
-                onClick={shareLink}
-                className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 shadow-sm
-                           hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-sky-500
-                           dark:border-white/15 dark:bg-slate-900 dark:text-slate-100"
-              >
-                Share
-              </button>
-            </div>
-          ) : (
-            <div className="text-sm text-slate-400">Link will appear here.</div>
-          )}
+          <div className="flex-1">
+            {createdLink ? (
+              <div className="mt-2 flex items-center gap-2 sm:mt-0 sm:justify-end">
+                <input
+                  readOnly
+                  value={createdLink}
+                  className="w-full max-w-[28rem] rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-700"
+                />
+                <button
+                  onClick={() => navigator.clipboard?.writeText(createdLink)}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  Copy
+                </button>
+                {'share' in navigator ? (
+                  <button
+                    onClick={() =>
+                      (navigator as any).share({
+                        title: previewTitle || 'Invite',
+                        text: `${previewTitle || 'Invite'} — ${previewWhen}`,
+                        url: createdLink,
+                      })
+                    }
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  >
+                    Share
+                  </button>
+                ) : null}
+              </div>
+            ) : (
+              <p className="mt-2 text-sm text-slate-500 sm:mt-0 sm:text-right">
+                Link will appear here after you create.
+              </p>
+            )}
+          </div>
         </div>
-      </form>
+      </div>
+
+      <p className="mt-6 text-sm text-slate-500">
+        Tip: try “Park with kids, 3–5p today” or “Dinner, 7:30pm tomorrow”.
+      </p>
     </div>
   );
 }
