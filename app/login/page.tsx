@@ -6,22 +6,32 @@ import { supabase } from '@/lib/supabaseClient';
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    const base = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
+    if (busy) return;
+    setBusy(true);
 
-    const { data, error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: `${base}/auth/callback?next=/create` },
-    });
+    try {
+      const base = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
 
-    if (error) {
-      alert(error.message);
-      return;
+      const result = await supabase.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: `${base}/auth/callback?next=/create` },
+      });
+
+      if (result.error) {
+        alert(result.error.message);
+      } else {
+        setSent(true);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Could not send magic link.');
+    } finally {
+      setBusy(false);
     }
-    // Optionally inspect data if you want
-    setSent(true);
   }
 
   return (
@@ -38,7 +48,9 @@ export default function LoginPage() {
             style={{ width:'100%', padding:8 }}
             required
           />
-          <button type="submit" style={{ marginTop: 12 }}>Send Magic Link</button>
+          <button type="submit" style={{ marginTop: 12 }} disabled={busy}>
+            {busy ? 'Sending…' : 'Send Magic Link'}
+          </button>
         </form>
       ) : (
         <p>Check your inbox! Click the link to sign in.</p>
