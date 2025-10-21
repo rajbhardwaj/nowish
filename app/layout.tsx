@@ -13,7 +13,21 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://nowish.vercel.app'),
   title: 'Nowish',
+  description: 'Spontaneous, lightweight invites for your real life.',
+  openGraph: {
+    siteName: 'Nowish',
+    type: 'website',
+    url: '/',
+    title: 'Nowish',
+    description: 'Spontaneous, lightweight invites for your real life.',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Nowish',
+    description: 'Spontaneous, lightweight invites for your real life.',
+  },
   viewport: 'width=device-width, initial-scale=1',
 };
 

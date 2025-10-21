@@ -1,104 +1,162 @@
-'use client';
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from "@/lib/supabaseClient"; // your existing browser client
+import { createClient } from "@supabase/supabase-js";
 
-type Invite = {
-  id: string;
-  title: string;
-  window_start: string;
-  window_end: string;
-  location_text: string | null;
-  chips: string[] | null;
-};
+// ✅ use a small server-side supabase for metadata
+const supabaseServer = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_ANON_KEY!,
+  { global: { fetch } }
+);
 
-export default function InvitePage() {
-  const params = useParams<{ id: string }>();
-  const inviteId = params.id as string;
+export async function generateMetadata({ params }: { params: { id: string } }) {
+  const base = process.env.NEXT_PUBLIC_SITE_URL || "https://nowish.vercel.app";
 
-  const [invite, setInvite] = useState<Invite | null>(null);
+  const { data: invite } = await supabaseServer
+    .from("open_invites")
+    .select("id, title, window_start, window_end")
+    .eq("id", params.id)
+    .maybeSingle();
+
+  const title = invite?.title ? `Nowish: ${invite.title}` : "Nowish Invite";
+  const desc =
+    invite?.window_start && invite?.window_end
+      ? new Date(invite.window_start).toLocaleString([], {
+          dateStyle: "medium",
+          timeStyle: "short",
+        }) +
+        " – " +
+        new Date(invite.window_end).toLocaleTimeString([], {
+          timeStyle: "short",
+        })
+      : "Join this Nowish invite";
+
+  const ogImage = `${base}/invite/${params.id}/opengraph-image`;
+
+  return {
+    title,
+    description: desc,
+    openGraph: {
+      title,
+      description: desc,
+      url: `${base}/invite/${params.id}`,
+      siteName: "Nowish",
+      images: [ogImage],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description: desc,
+      images: [ogImage],
+    },
+  };
+}
+
+// ==================== PAGE ====================
+
+"use client";
+
+import { useState, useEffect } from "react";
+
+export default function InvitePage({ params }: { params: { id: string } }) {
+  const [invite, setInvite] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [expired, setExpired] = useState(false);
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [state, setState] = useState<string | null>(null);
 
   useEffect(() => {
-    async function load() {
-      const { data, error } = await supabase
-        .from('open_invites')
-        .select('id,title,window_start,window_end,location_text,chips')
-        .eq('id', inviteId)
+    async function loadInvite() {
+      const { data } = await supabase
+        .from("open_invites")
+        .select("id, title, window_start, window_end, creator_id")
+        .eq("id", params.id)
         .maybeSingle();
 
-      if (error || !data) {
-        setInvite(null);
-      } else {
-        const end = new Date(data.window_end).getTime();
-        if (Date.now() > end) setExpired(true);
-        setInvite(data as Invite);
-      }
+      setInvite(data);
       setLoading(false);
     }
-    if (inviteId) load();
-  }, [inviteId]);
+    loadInvite();
+  }, [params.id]);
 
-    async function rsvp(state: 'join' | 'maybe' | 'decline') {
-        if (!invite) return;
-        const res = await fetch('/api/rsvp', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-            inviteId: invite.id,
-            state,
-            guestName: name || null,
-            guestEmail: email || null,
-            }),
-        });
-        const json = await res.json();
-        if (!res.ok) return alert(json.error || 'Something went wrong');
-        alert(state === 'join' ? 'See you there!' : state === 'maybe' ? 'Maybe noted!' : 'All good — thanks!');
-    }
+  async function sendRSVP(status: "join" | "maybe" | "decline") {
+    setState(status);
+    await supabase.from("rsvps").insert({
+      invite_id: params.id,
+      state: status,
+    });
+    alert("Thanks — your RSVP was recorded!");
+  }
 
-  if (loading) return <main style={{ padding: 24 }}>Loading…</main>;
-  if (!invite) return <main style={{ padding: 24 }}>Invite not found.</main>;
-  if (expired) return <main style={{ padding: 24 }}>This invite has expired.</main>;
-
-  const start = new Date(invite.window_start).toLocaleString();
-  const end = new Date(invite.window_end).toLocaleString();
+  if (loading) return <p>Loading...</p>;
+  if (!invite) return <p>Invite not found.</p>;
 
   return (
-    <main style={{ padding: 24, maxWidth: 520, margin: '0 auto' }}>
-      <h1 style={{ marginBottom: 4 }}>{invite.title}</h1>
-      <p>
-        Window: <strong>{start}</strong> – <strong>{end}</strong>
+    <main
+      style={{
+        maxWidth: 720,
+        margin: "1.5rem auto",
+        padding: 16,
+        textAlign: "center",
+      }}
+    >
+      <h1 style={{ fontSize: "clamp(24px,5vw,36px)" }}>{invite.title}</h1>
+      <p style={{ color: "#555" }}>
+        {invite.window_start
+          ? new Date(invite.window_start).toLocaleString([], {
+              dateStyle: "medium",
+              timeStyle: "short",
+            }) +
+            " – " +
+            new Date(invite.window_end).toLocaleTimeString([], {
+              timeStyle: "short",
+            })
+          : ""}
       </p>
-      {invite.location_text && <p>Where: {invite.location_text}</p>}
-      {!!invite.chips?.length && (
-        <p>{invite.chips.map((c) => <span key={c} style={{ marginRight: 8, fontSize: 12, padding: '2px 6px', background:'#eee', borderRadius: 6 }}>{c}</span>)}</p>
-      )}
 
-      <hr style={{ margin: '16px 0' }} />
-
-      <p style={{ marginBottom: 8 }}>Tell the host who you are:</p>
-      <input
-        placeholder="Your name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        style={{ width: '100%', padding: 8, marginBottom: 8 }}
-      />
-      <input
-        type="email"
-        placeholder="Email (optional, helps future invites)"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        style={{ width: '100%', padding: 8, marginBottom: 16 }}
-      />
-
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button onClick={() => rsvp('join')}>Join</button>
-        <button onClick={() => rsvp('maybe')}>Maybe</button>
-        <button onClick={() => rsvp('decline')}>{"Can't make it"}</button>
+      <div style={{ marginTop: 32, display: "flex", gap: 12, justifyContent: "center" }}>
+        <button
+          onClick={() => sendRSVP("join")}
+          style={{
+            background: "#111",
+            color: "#fff",
+            border: "none",
+            padding: "10px 18px",
+            borderRadius: 8,
+            fontWeight: 600,
+          }}
+        >
+          I’m in
+        </button>
+        <button
+          onClick={() => sendRSVP("maybe")}
+          style={{
+            background: "#f4f4f4",
+            border: "1px solid #ccc",
+            padding: "10px 18px",
+            borderRadius: 8,
+            fontWeight: 600,
+          }}
+        >
+          Maybe
+        </button>
+        <button
+          onClick={() => sendRSVP("decline")}
+          style={{
+            background: "transparent",
+            border: "1px solid #ccc",
+            padding: "10px 18px",
+            borderRadius: 8,
+            color: "#777",
+            fontWeight: 600,
+          }}
+        >
+          Can’t make it
+        </button>
       </div>
+
+      {state && (
+        <p style={{ marginTop: 24, color: "#0070f3", fontWeight: 600 }}>
+          Great — see you there!
+        </p>
+      )}
     </main>
   );
 }
