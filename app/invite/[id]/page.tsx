@@ -55,7 +55,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
   const title = invite?.title ? `Nowish: ${invite.title}` : 'Nowish Invite';
   const when = formatWhen(invite?.window_start, invite?.window_end);
-  const ogUrl = `${base}/invite/${id}/opengraph-image?t=${Date.now()}`;
+  // Try static image first to test if meta tags work
+  const ogUrl = `${base}/invite/${id}/opengraph-image`;
 
   return {
     title,
@@ -91,6 +92,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       'og:locale': 'en_US',
       'og:updated_time': new Date().toISOString(),
       'og:image:alt': 'Nowish Invite',
+      'og:image:url': ogUrl,
+      'og:image': ogUrl,
     },
   };
 }
