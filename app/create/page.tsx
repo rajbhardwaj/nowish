@@ -20,17 +20,26 @@ const supabase = createClient(
 const BASE =
   process.env.NEXT_PUBLIC_BASE_URL ?? 'https://nowish.vercel.app';
 
+function getErrMsg(e: unknown): string {
+  if (e instanceof Error) return e.message;
+  if (typeof e === 'string') return e;
+  try {
+    return JSON.stringify(e);
+  } catch {
+    return 'Unknown error';
+  }
+}
+
 export default function CreateInvitePage() {
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
 
   const [rawText, setRawText] = useState('');
   const [circle, setCircle] = useState<Circle>('Family');
-  const [hostName, setHostName] = useState(''); // defaults later
+  const [hostName, setHostName] = useState('');
   const [creating, setCreating] = useState(false);
   const [createdUrl, setCreatedUrl] = useState<string | null>(null);
 
-  // Load session info so we can attach creator_id and default hostName
   useEffect(() => {
     (async () => {
       const { data } = await supabase.auth.getSession();
@@ -38,45 +47,38 @@ export default function CreateInvitePage() {
       const uid = data.session?.user.id ?? null;
       setSessionEmail(email);
       setUserId(uid);
-
       if (!hostName && email) {
         const handle = email.split('@')[0];
         setHostName(handle);
       }
     })();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [hostName]);
 
-  // Parse times/title as user types
   const parsed: ParsedWindow | null = useMemo(() => {
     if (!rawText.trim()) return null;
 
     const ref = new Date();
     const results = chrono.parse(rawText, ref, { forwardDate: true });
-
-    // title = rawText minus the time chunk if we can detect it
     let title = rawText.trim();
 
     if (results.length) {
       const r = results[0];
       const start = r.start?.date() ?? ref;
       const end =
-        r.end?.date() ??
-        new Date(start.getTime() + 60 * 60 * 1000); // +1h default
+        r.end?.date() ?? new Date(start.getTime() + 60 * 60 * 1000);
 
-      // Try to drop the matched time text from title
       try {
         const before = rawText.slice(0, r.index).trim();
         const after = rawText.slice(r.index + r.text.length).trim();
         const guess = [before, after].filter(Boolean).join(' ');
         if (guess) title = guess;
       } catch {
-        /* noop */
+        /* ignore */
       }
 
       return { title: title || 'Hang', start, end };
     }
 
-    // Fallback: no parse → just use now +1h
     return {
       title: title || 'Hang',
       start: ref,
@@ -98,7 +100,6 @@ export default function CreateInvitePage() {
     try {
       const { title, start, end } = parsed;
 
-      // Insert into open_invites. Adjust column names if yours differ.
       const { data, error } = await supabase
         .from('open_invites')
         .insert({
@@ -107,7 +108,7 @@ export default function CreateInvitePage() {
           window_end: end.toISOString(),
           circle,
           host_name: hostName || sessionEmail?.split('@')[0] || 'Me',
-          creator_id: userId, // ← fixes the NOT NULL you saw earlier
+          creator_id: userId,
         })
         .select('id')
         .single();
@@ -117,17 +118,12 @@ export default function CreateInvitePage() {
       const url = `${BASE}/invite/${data.id}`;
       setCreatedUrl(url);
     } catch (e: unknown) {
-  // Show the actual Supabase/Postgres error
-  const msg =
-    (e as any)?.message ??
-    (typeof e === 'string' ? e : JSON.stringify(e));
-  alert(`Create failed: ${msg}`);
-} finally {
-  setCreating(false);
-}
+      alert(`Create failed: ${getErrMsg(e)}`);
+    } finally {
+      setCreating(false);
+    }
   }
 
-  // Nicely formatted preview line (for your own confidence while typing)
   const previewLine = useMemo(() => {
     if (!parsed) return '—';
     const start = new Intl.DateTimeFormat(undefined, {
@@ -147,7 +143,9 @@ export default function CreateInvitePage() {
   return (
     <div className="nw-container">
       {sessionEmail && (
-        <div className="nw-banner">You’re signed in as <strong>{sessionEmail}</strong></div>
+        <div className="nw-banner">
+          You’re signed in as <strong>{sessionEmail}</strong>
+        </div>
       )}
 
       <h1 style={{ fontSize: 44, lineHeight: 1.1, marginBottom: 14 }}>
@@ -159,9 +157,10 @@ export default function CreateInvitePage() {
       </p>
 
       <div className="nw-card nw-stack" role="form" aria-labelledby="create-invite">
-        {/* What */}
         <div>
-          <label htmlFor="what" className="nw-label">What are you doing?</label>
+          <label htmlFor="what" className="nw-label">
+            What are you doing?
+          </label>
           <input
             id="what"
             className="nw-input"
@@ -174,9 +173,10 @@ export default function CreateInvitePage() {
           <div className="nw-help">Preview: {previewLine}</div>
         </div>
 
-        {/* Circle */}
         <div>
-          <label htmlFor="circle" className="nw-label">Who’s this for?</label>
+          <label htmlFor="circle" className="nw-label">
+            Who’s this for?
+          </label>
           <select
             id="circle"
             className="nw-select"
@@ -189,9 +189,10 @@ export default function CreateInvitePage() {
           </select>
         </div>
 
-        {/* Host display name */}
         <div>
-          <label htmlFor="host" className="nw-label">Your name (shows on invite)</label>
+          <label htmlFor="host" className="nw-label">
+            Your name (shows on invite)
+          </label>
           <input
             id="host"
             className="nw-input"
@@ -205,7 +206,6 @@ export default function CreateInvitePage() {
           </div>
         </div>
 
-        {/* Actions */}
         <div className="nw-actions">
           <button
             className="nw-btn"
