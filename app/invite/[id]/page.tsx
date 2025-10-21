@@ -55,7 +55,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
   const title = invite?.title ? `Nowish: ${invite.title}` : 'Nowish Invite';
   const when = formatWhen(invite?.window_start, invite?.window_end);
-  const ogUrl = `${base}/invite/${id}/opengraph-image`;
+  const ogUrl = `${base}/invite/${id}/opengraph-image?t=${Date.now()}`;
 
   return {
     title,
