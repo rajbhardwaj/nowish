@@ -19,10 +19,22 @@ export default function InviteClient({ inviteId }: { inviteId: string }) {
     })();
   }, []);
 
+  async function upsertRsvp(payload: {
+    invite_id: string;
+    state: 'join' | 'maybe' | 'decline';
+    guest_email: string;
+    guest_name?: string | null;
+  }) {
+    // Upsert on (invite_id, guest_email)
+    return supabase
+      .from('rsvps')
+      .upsert(payload, { onConflict: 'invite_id,guest_email' });
+  }
+
   async function sendRSVP(status: 'join' | 'maybe' | 'decline') {
     if (busy) return;
 
-    // === Guest path ===
+    // === If not signed in, require email ===
     if (!authedEmail) {
       const email = guestEmail.trim();
       const name = guestName.trim();
@@ -31,7 +43,6 @@ export default function InviteClient({ inviteId }: { inviteId: string }) {
         alert('Please enter your email so the host knows who you are.');
         return;
       }
-
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
         alert('Please enter a valid email.');
         return;
@@ -40,16 +51,15 @@ export default function InviteClient({ inviteId }: { inviteId: string }) {
       setBusy(true);
       try {
         setState(status);
-        const { error } = await supabase.from('rsvps').insert({
+        const { error } = await upsertRsvp({
           invite_id: inviteId,
           state: status,
           guest_email: email,
           guest_name: name || null,
-          responded_at: new Date().toISOString(),
         });
         if (error) {
           console.error(error);
-          alert(`Could not record RSVP: ${error.message}`); // 👈 real reason shown
+          alert(`Could not record RSVP: ${error.message}`);
           setState(null);
         }
       } catch (err) {
@@ -62,14 +72,15 @@ export default function InviteClient({ inviteId }: { inviteId: string }) {
       return;
     }
 
-    // === Authenticated path ===
+    // === Signed-in: use their authed email so the same constraint applies ===
     setBusy(true);
     try {
       setState(status);
-      const { error } = await supabase.from('rsvps').insert({
+      const { error } = await upsertRsvp({
         invite_id: inviteId,
         state: status,
-        responded_at: new Date().toISOString(),
+        guest_email: authedEmail, // <- key point
+        guest_name: null,
       });
       if (error) {
         console.error(error);
@@ -87,7 +98,7 @@ export default function InviteClient({ inviteId }: { inviteId: string }) {
 
   return (
     <div style={{ marginTop: 24, textAlign: 'center' }}>
-      {/* === Guest identity form === */}
+      {/* Guest identity form */}
       {!authedEmail && (
         <section
           style={{
@@ -107,94 +118,47 @@ export default function InviteClient({ inviteId }: { inviteId: string }) {
               placeholder="Your name (optional)"
               value={guestName}
               onChange={(e) => setGuestName(e.target.value)}
-              style={{
-                padding: '10px 12px',
-                borderRadius: 8,
-                border: '1px solid #ddd',
-              }}
+              style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #ddd' }}
             />
             <input
               type="email"
               placeholder="Your email (required)"
               value={guestEmail}
               onChange={(e) => setGuestEmail(e.target.value)}
-              style={{
-                padding: '10px 12px',
-                borderRadius: 8,
-                border: '1px solid #ddd',
-              }}
+              style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #ddd' }}
             />
           </div>
         </section>
       )}
 
-      {/* === RSVP buttons === */}
-      <div
-        style={{
-          display: 'flex',
-          gap: 12,
-          justifyContent: 'center',
-          flexWrap: 'wrap',
-        }}
-      >
+      {/* RSVP buttons */}
+      <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
         <button
           onClick={() => sendRSVP('join')}
           disabled={busy}
-          style={{
-            background: '#111',
-            color: '#fff',
-            border: 'none',
-            padding: '10px 18px',
-            borderRadius: 8,
-            fontWeight: 600,
-            minWidth: 110,
-          }}
+          style={{ background: '#111', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: 8, fontWeight: 600, minWidth: 110 }}
         >
           I’m in
         </button>
-
         <button
           onClick={() => sendRSVP('maybe')}
           disabled={busy}
-          style={{
-            background: '#f4f4f4',
-            border: '1px solid #ccc',
-            padding: '10px 18px',
-            borderRadius: 8,
-            fontWeight: 600,
-            minWidth: 110,
-          }}
+          style={{ background: '#f4f4f4', border: '1px solid #ccc', padding: '10px 18px', borderRadius: 8, fontWeight: 600, minWidth: 110 }}
         >
           Maybe
         </button>
-
         <button
           onClick={() => sendRSVP('decline')}
           disabled={busy}
-          style={{
-            background: 'transparent',
-            border: '1px solid #ccc',
-            padding: '10px 18px',
-            borderRadius: 8,
-            color: '#777',
-            fontWeight: 600,
-            minWidth: 110,
-          }}
+          style={{ background: 'transparent', border: '1px solid #ccc', padding: '10px 18px', borderRadius: 8, color: '#777', fontWeight: 600, minWidth: 110 }}
         >
           Can’t make it
         </button>
       </div>
 
-      {/* === Confirmation message === */}
+      {/* Confirmation */}
       {state && (
-        <p
-          style={{
-            marginTop: 16,
-            color: '#0070f3',
-            fontWeight: 600,
-            textAlign: 'center',
-          }}
-        >
+        <p style={{ marginTop: 16, color: '#0070f3', fontWeight: 600 }}>
           {state === 'join'
             ? 'Great — see you there!'
             : state === 'maybe'
