@@ -1,60 +1,53 @@
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+/* app/layout.tsx */
+import type { Metadata, Viewport } from 'next';
+import './globals.css';
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+const BASE =
+  process.env.NEXT_PUBLIC_BASE_URL ?? 'https://nowish.vercel.app';
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-export const metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://nowish.vercel.app'),
-  title: 'Nowish',
-  description: 'Make plans without planning. Spontaneous hangs that actually happen.',
+export const metadata: Metadata = {
+  metadataBase: new URL(BASE),
+  title: { default: 'Nowish', template: '%s · Nowish' },
+  description: 'Spontaneous hangs with your people.',
   openGraph: {
+    type: 'website',
     siteName: 'Nowish',
+    url: BASE,
     title: 'Nowish',
-    description: 'Make plans without planning. Spontaneous hangs that actually happen.',
-    images: ['/opengraph-image.png'], // Next will auto-generate fallback if present; ok to leave
+    description: 'Spontaneous hangs with your people.',
   },
   twitter: {
     card: 'summary_large_image',
+    site: '@nowish',
     title: 'Nowish',
-    description: 'Make plans without planning. Spontaneous hangs that actually happen.',
+    description: 'Spontaneous hangs with your people.',
   },
   icons: {
-    icon: '/icon.png',
-    apple: '/apple-icon.png',
+    icon: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
   },
-};
-export const viewport = {
-  themeColor: '#0f1115',
-  width: 'device-width',
-  initialScale: 1,
-};
-
-robots: {
+  // Keep this minimal — Next expects only these fields here
+  robots: {
     index: true,
     follow: true,
-    // helps Apple/Twitter
-    'user-agent': '*',
-    allow: '/',
   },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#0b1220',
+  colorScheme: 'light dark',
+};
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        {children}
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
