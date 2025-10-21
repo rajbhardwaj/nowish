@@ -5,6 +5,15 @@ import { createClient } from '@supabase/supabase-js';
 
 type Circle = 'Family' | 'Close Friends' | 'Coworkers';
 
+// Web Share API type guard (no `any`)
+type ShareCapableNavigator = Navigator & {
+  share?: (data: ShareData) => Promise<void>;
+  canShare?: (data?: ShareData) => boolean;
+};
+function hasShare(n: Navigator): n is ShareCapableNavigator {
+  return typeof (n as ShareCapableNavigator).share === 'function';
+}
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -17,7 +26,6 @@ function emailHandle(email: string) {
 }
 
 function titleFromRaw(raw: string) {
-  // Strip common time words/spans so the title looks clean
   const cleaned = raw
     .replace(/\b(today|tomorrow|tonight)\b/gi, '')
     .replace(/\bfrom\b.*$/i, '')
@@ -72,16 +80,15 @@ export default function CreateInvitePage() {
       setSignedInAs(email);
       if (email && !hostName) setHostName(emailHandle(email));
     });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // load chrono once (client)
   useEffect(() => {
     let mounted = true;
     import('chrono-node')
       .then((m) => mounted && setChronoMod(m))
-      .catch(() => {
-        // if chrono fails to load (shouldn't), we just won't live-parse
-      });
+      .catch(() => {});
     return () => {
       mounted = false;
     };
@@ -136,8 +143,7 @@ export default function CreateInvitePage() {
         return;
       }
 
-      // Reuse live parse, but if chrono failed to load for some reason,
-      // do a just-in-time parse here to be safe.
+      // Reuse live parse; if not present, do a just-in-time parse.
       let start = liveStart;
       let end = liveEnd;
       if ((!start || !end) && !chronoMod) {
@@ -167,7 +173,7 @@ export default function CreateInvitePage() {
           window_start: start.toISOString(),
           window_end: end.toISOString(),
           host_name: host,
-          circle, // enum/text column you’re using
+          circle, // enum/text column
         })
         .select('id')
         .single();
@@ -183,16 +189,16 @@ export default function CreateInvitePage() {
       const url = `${base}/invite/${data.id}`;
       setCreatedLink(url);
 
-      // try sharesheet
-      if (typeof navigator !== 'undefined' && (navigator as any).share) {
+      // Try Web Share (no `any`)
+      if (typeof navigator !== 'undefined' && hasShare(navigator)) {
         try {
-          await (navigator as any).share({
+          await navigator.share({
             title,
             text: `${title} — ${previewWhen}`,
             url,
           });
         } catch {
-          // user cancelled; keep link visible
+          // user cancelled
         }
       }
     } finally {
@@ -202,7 +208,6 @@ export default function CreateInvitePage() {
 
   return (
     <div className="mx-auto max-w-screen-sm px-4 py-8">
-      {/* banner */}
       {signedInAs && (
         <div className="mb-6 rounded-xl border border-slate-200/60 bg-slate-50 px-4 py-3 text-sm text-slate-700">
           You’re signed in as <span className="font-semibold">{signedInAs}</span>
@@ -217,7 +222,6 @@ export default function CreateInvitePage() {
       </p>
 
       <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-        {/* What */}
         <label className="mb-2 block text-base font-semibold text-slate-900">
           What are you doing?
         </label>
@@ -234,7 +238,6 @@ export default function CreateInvitePage() {
           {previewWhen}
         </div>
 
-        {/* Circle */}
         <label className="mb-2 block text-base font-semibold text-slate-900">
           Who’s this for?
         </label>
@@ -248,7 +251,6 @@ export default function CreateInvitePage() {
           <option>Coworkers</option>
         </select>
 
-        {/* Host name */}
         <label className="mb-2 block text-base font-semibold text-slate-900">
           Your name (shows on invite)
         </label>
@@ -262,7 +264,6 @@ export default function CreateInvitePage() {
           Optional — defaults to your email handle.
         </p>
 
-        {/* Actions */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <button
             onClick={handleCreate}
@@ -290,10 +291,10 @@ export default function CreateInvitePage() {
                 >
                   Copy
                 </button>
-                {'share' in navigator ? (
+                {typeof navigator !== 'undefined' && hasShare(navigator) ? (
                   <button
                     onClick={() =>
-                      (navigator as any).share({
+                      navigator.share!({
                         title: previewTitle || 'Invite',
                         text: `${previewTitle || 'Invite'} — ${previewWhen}`,
                         url: createdLink,
