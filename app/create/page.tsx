@@ -5,17 +5,96 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 
 type InviteRow = { id: string };
+type CircleName = 'Family' | 'Close Friends' | 'Coworkers';
+
+function parseWindow(input: string): { start: Date; end: Date } {
+  const now = new Date();
+  const base = new Date(now);
+
+  if (/\btomorrow\b/i.test(input)) base.setDate(base.getDate() + 1);
+
+  const m = input.match(
+    /(\d{1,2})(?::(\d{2}))?\s*(a|p|am|pm)?\s*[-–]\s*(\d{1,2})(?::(\d{2}))?\s*(a|p|am|pm)?/i
+  );
+
+  const clampEndAfter = (s: Date, e: Date) => (e > s ? e : new Date(s.getTime() + 60 * 60 * 1000));
+
+  if (m) {
+    const [ , h1, min1, mer1, h2, min2, mer2 ] = m;
+    const start = new Date(base);
+    const end = new Date(base);
+
+    const to24 = (h: number, mer?: string): number => {
+      if (!mer) return h;
+      const mm = mer.toLowerCase();
+      if (mm === 'p' || mm === 'pm') return h % 12 + 12;
+      if (mm === 'a' || mm === 'am') return h % 12;
+      return h;
+    };
+
+    const startMer = mer1 || (!mer1 && mer2 ? mer2 : undefined);
+    const endMer = mer2;
+    const sh = parseInt(h1, 10);
+    const eh = parseInt(h2, 10);
+    const sm = min1 ? parseInt(min1, 10) : 0;
+    const em = min2 ? parseInt(min2, 10) : 0;
+
+    let hStart = to24(sh, startMer);
+    let hEnd = to24(eh, endMer);
+
+    const guessPM = /\b(tonight|evening|pm)\b/i.test(input);
+    if (!startMer && !endMer) {
+      if (guessPM) {
+        hStart = sh % 12 + 12;
+        hEnd = eh % 12 + 12;
+      }
+    }
+
+    start.setHours(hStart, sm, 0, 0);
+    end.setHours(hEnd, em, 0, 0);
+    return { start, end: clampEndAfter(start, end) };
+  }
+
+  const single = input.match(/(\d{1,2})(?::(\d{2}))?\s*(a|p|am|pm)/i);
+  if (single) {
+    const [, h, min, mer] = single;
+    const start = new Date(base);
+    const end = new Date(base);
+    const hh = parseInt(h, 10);
+    const mm = min ? parseInt(min, 10) : 0;
+    const m = (mer || '').toLowerCase();
+    const h24 = (m === 'p' || m === 'pm') ? hh % 12 + 12 : hh % 12;
+    start.setHours(h24, mm, 0, 0);
+    end.setTime(start.getTime() + 2 * 60 * 60 * 1000);
+    return { start, end };
+  }
+
+  if (/\b(tonight|this evening)\b/i.test(input)) {
+    const start = new Date(base);
+    start.setHours(18, 0, 0, 0);
+    const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+    return { start, end };
+  }
+
+  if (/\btoday\b/i.test(input)) {
+    const start = new Date(base);
+    const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+    return { start, end };
+  }
+
+  const start = now;
+  const end = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+  return { start, end };
+}
 
 export default function CreateInvitePage() {
   const router = useRouter();
-
   const [sessionChecked, setSessionChecked] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
 
   const [details, setDetails] = useState('');
-  const [circleName, setCircleName] = useState<'Family' | 'Close Friends' | 'Coworkers'>('Family');
-
+  const [circleName, setCircleName] = useState<CircleName>('Family');
   const [createdId, setCreatedId] = useState<string | null>(null);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
 
@@ -69,6 +148,8 @@ export default function CreateInvitePage() {
       return;
     }
 
+    const { start, end } = parseWindow(text);
+
     const { data, error } = await supabase
       .from('open_invites')
       .insert({
@@ -77,6 +158,8 @@ export default function CreateInvitePage() {
         location_text: null,
         chips: [],
         circle_ids: [circleId],
+        window_start: start.toISOString(),
+        window_end: end.toISOString(),
       })
       .select('id')
       .single<InviteRow>();
@@ -131,10 +214,10 @@ export default function CreateInvitePage() {
             }}
           />
 
-          <label style={{ display: 'block', marginBottom: 8 }}>Who’s this for?</label>
+          <label style={{ display: 'block', marginBottom: 8 }}>{"Who’s this for?"}</label>
           <select
             value={circleName}
-            onChange={(e) => setCircleName(e.target.value as typeof circleName)}
+            onChange={(e) => setCircleName(e.target.value as CircleName)}
             style={{ width: '100%', marginBottom: 16, padding: '8px 10px' }}
           >
             <option value="Family">Family</option>
