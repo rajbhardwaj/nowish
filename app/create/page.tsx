@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import chrono from 'chrono-node';
+import * as chrono from 'chrono-node';
 
 type Circle = 'Family' | 'Close Friends' | 'Coworkers';
 
