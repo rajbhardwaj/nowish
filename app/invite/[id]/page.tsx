@@ -46,17 +46,26 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
 
   const title = invite?.title ? `Nowish: ${invite.title}` : 'Nowish Invite';
   const when = formatWindow(invite?.window_start, invite?.window_end) || 'Tap to RSVP';
-  const image = `${base}/invite/${params.id}/opengraph-image`;
+  const image = `${base}/api/og/${params.id}.png?v=1`; // <- real .png
 
   return {
     title,
     description: when,
     openGraph: {
-      title, description: when, url: `${base}/invite/${params.id}`,
+      title,
+      description: when,
+      url: `${base}/invite/${params.id}`,
       siteName: 'Nowish',
-      images: [{ url: image, width: 1200, height: 630, alt: 'Nowish Invite' }]
+      images: [{ url: image, width: 1200, height: 630, alt: 'Nowish Invite' }],
     },
-    twitter: { card: 'summary_large_image', title, description: when, images: [image] }
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description: when,
+      images: [image],
+    },
+    alternates: { canonical: `${base}/invite/${params.id}` },
+    robots: { index: true, follow: true },
   };
 }
 
