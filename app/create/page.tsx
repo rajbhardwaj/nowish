@@ -2,8 +2,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { createClient, Session, User } from '@supabase/supabase-js';
+import { createClient, User } from '@supabase/supabase-js';
 import * as chrono from 'chrono-node';
 
 type Circle = 'Family' | 'Close Friends' | 'Coworkers';
@@ -65,9 +64,6 @@ function parseInput(input: string, refDate: Date): Parsed {
 }
 
 export default function CreateInvitePage() {
-  const router = useRouter();
-
-  const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
 
   const [input, setInput] = useState('');
@@ -80,7 +76,6 @@ export default function CreateInvitePage() {
   // auth
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session ?? null);
       setUser(data.session?.user ?? null);
       if (data.session?.user?.email) {
         const handle = data.session.user.email.split('@')[0] ?? '';
@@ -88,7 +83,6 @@ export default function CreateInvitePage() {
       }
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_e, sess) => {
-      setSession(sess ?? null);
       setUser(sess?.user ?? null);
     });
     return () => sub.subscription.unsubscribe();
@@ -157,11 +151,11 @@ export default function CreateInvitePage() {
           // user may cancel share; ignore
         }
       }
-    } catch (e) {
-      setErrorMsg('Unexpected error creating invite.');
-    } finally {
-      setCreating(false);
-    }
+     } catch {
+       setErrorMsg('Unexpected error creating invite.');
+     } finally {
+       setCreating(false);
+     }
   }
 
   function copyLink() {
@@ -185,12 +179,12 @@ export default function CreateInvitePage() {
     <div className="space-y-6">
       {/* signed in banner */}
       <div className="rounded-xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 shadow-sm">
-        You're signed in as <span className="font-medium">{user?.email ?? '—'}</span>
+        You&apos;re signed in as <span className="font-medium">{user?.email ?? '—'}</span>
       </div>
 
       <header className="space-y-2">
         <h1 className="text-4xl font-bold tracking-tight text-slate-900">Create an invite</h1>
-        <p className="text-slate-600">Write it how you'd text it. We'll parse the time.</p>
+        <p className="text-slate-600">Write it how you&apos;d text it. We&apos;ll parse the time.</p>
       </header>
 
       <div className="rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-lg backdrop-blur-sm">
@@ -221,7 +215,7 @@ export default function CreateInvitePage() {
         {/* Circle & Host */}
         <div className="mt-6 grid gap-6 md:grid-cols-2">
           <div className="space-y-2">
-            <label className="block text-lg font-semibold text-slate-900">Who's this for?</label>
+            <label className="block text-lg font-semibold text-slate-900">Who&apos;s this for?</label>
             <select
               className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
               value={circle}
@@ -300,8 +294,8 @@ export default function CreateInvitePage() {
       </div>
 
       <div className="text-sm text-slate-500">
-        <span className="font-medium">Tip:</span> try <span className="font-medium">"Park with kids, 3–5p today"</span> or{' '}
-        <span className="font-medium">"Dinner, 7:30pm tomorrow"</span>.
+        <span className="font-medium">Tip:</span> try <span className="font-medium">&quot;Park with kids, 3–5p today&quot;</span> or{' '}
+        <span className="font-medium">&quot;Dinner, 7:30pm tomorrow&quot;</span>.
       </div>
     </div>
   );
