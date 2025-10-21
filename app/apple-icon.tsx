@@ -11,9 +11,10 @@ export default function AppleIcon() {
           width: '100%',
           height: '100%',
           background: '#0f1115',
-          display: 'grid',
-          placeItems: 'center',
           borderRadius: 36,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
           fontFamily:
             'ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial',
         }}
@@ -24,8 +25,9 @@ export default function AppleIcon() {
             height: 136,
             borderRadius: 28,
             background: 'linear-gradient(225deg,#6ee7b7 0%,#3b82f6 100%)',
-            display: 'grid',
-            placeItems: 'center',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
           <div
