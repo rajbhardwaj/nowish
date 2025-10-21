@@ -122,6 +122,7 @@ export default function CreateInvitePage() {
             window_start: parsed.start.toISOString(),
             window_end: parsed.end.toISOString(),
             host_name: hostName || user.email?.split('@')[0],
+            circle_ids: [], // Required field - empty array for now
           },
         ])
         .select('id')
