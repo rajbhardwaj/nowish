@@ -1,72 +1,117 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
+
+type InviteRow = { id: string };
 
 export default function CreateInvitePage() {
   const router = useRouter();
+
   const [sessionChecked, setSessionChecked] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+
   const [title, setTitle] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
-  const [createdId, setCreatedId] = useState<string | null>(null);
+  const [circleName, setCircleName] = useState('Family');
 
-  // Check session once on load
+  const [createdId, setCreatedId] = useState<string | null>(null);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+
+  // 1) Check session once on load
   useEffect(() => {
-    async function check() {
+    (async () => {
       const { data, error } = await supabase.auth.getSession();
       if (error || !data.session) {
-        router.push('/login');
+        router.replace('/login');
         return;
       }
-      setUserEmail(data.session.user.email);
+      setUserEmail(data.session.user.email ?? null); // <- fix: email can be undefined
+      setUserId(data.session.user.id);
       setSessionChecked(true);
-    }
-    check();
+    })();
   }, [router]);
+
+  // Helper: ensure a circle exists for this user + name
+  async function ensureCircle(ownerId: string, name: string): Promise<string> {
+    const { data: existing } = await supabase
+      .from('circles')
+      .select('id')
+      .eq('owner_id', ownerId)
+      .eq('name', name)
+      .maybeSingle();
+
+    if (existing?.id) return existing.id;
+
+    const { data: inserted, error } = await supabase
+      .from('circles')
+      .insert({ owner_id: ownerId, name })
+      .select('id')
+      .single();
+
+    if (error || !inserted) throw new Error(error?.message || 'Failed to create circle');
+    return inserted.id as string;
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!title || !startTime || !endTime) return alert('Please fill all fields');
+    if (!userId) return alert('Not signed in.');
+    if (!title) return alert('Please add a title.');
+    if (!startTime || !endTime) return alert('Please set a start and end time.');
 
+    // 2) Ensure a circle (default "Family")
+    let circleId: string;
+    try {
+      circleId = await ensureCircle(userId, circleName);
+    } catch (err: unknown) {
+      console.error(err);
+      alert('Could not ensure circle.');
+      return;
+    }
+
+    // 3) Insert the invite (must include creator_id and circle_ids)
     const { data, error } = await supabase
       .from('open_invites')
-      .insert([
-        {
-          title,
-          window_start: startTime,
-          window_end: endTime,
-          host_email: userEmail,
-        },
-      ])
-      .select()
-      .single();
+      .insert({
+        creator_id: userId,
+        title,
+        window_start: startTime,
+        window_end: endTime,
+        location_text: null,
+        chips: [],
+        circle_ids: [circleId],
+      })
+      .select('id')
+      .single<InviteRow>();
 
-    if (error) {
-      alert(error.message);
+    if (error || !data) {
+      alert(error?.message || 'Failed to create invite');
       return;
     }
 
     setCreatedId(data.id);
+    const base = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
+    setShareUrl(`${base}/invite/${data.id}`);
   }
 
   if (!sessionChecked) {
-    return <p style={{ padding: 20 }}>Checking session...</p>;
+    return <main style={{ padding: 20 }}>Checking session…</main>;
   }
 
   return (
-    <main style={{ maxWidth: 500, margin: '2rem auto', padding: 20 }}>
+    <main style={{ maxWidth: 560, margin: '2rem auto', padding: 20 }}>
       {userEmail && (
         <div
           style={{
             background: '#f4f4f4',
-            padding: '0.5rem 1rem',
+            padding: '8px 12px',
             borderRadius: 6,
-            marginBottom: '1rem',
+            marginBottom: 16,
             textAlign: 'center',
-            fontSize: '0.9rem',
+            fontSize: 14,
           }}
         >
           You are signed in as <strong>{userEmail}</strong>
@@ -84,6 +129,8 @@ export default function CreateInvitePage() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               style={{ width: '100%', marginBottom: 12 }}
+              placeholder="Park with the kids"
+              required
             />
           </label>
 
@@ -94,6 +141,7 @@ export default function CreateInvitePage() {
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
               style={{ width: '100%', marginBottom: 12 }}
+              required
             />
           </label>
 
@@ -104,7 +152,21 @@ export default function CreateInvitePage() {
               value={endTime}
               onChange={(e) => setEndTime(e.target.value)}
               style={{ width: '100%', marginBottom: 12 }}
+              required
             />
+          </label>
+
+          <label>
+            Circle<br />
+            <select
+              value={circleName}
+              onChange={(e) => setCircleName(e.target.value)}
+              style={{ width: '100%', marginBottom: 16 }}
+            >
+              <option>Family</option>
+              <option>Close Friends</option>
+              <option>Coworkers</option>
+            </select>
           </label>
 
           <button type="submit">Create Invite</button>
@@ -112,9 +174,32 @@ export default function CreateInvitePage() {
       ) : (
         <div style={{ marginTop: 20 }}>
           <p>Invite created!</p>
-          <p>
-            <a href={`/invite/${createdId}`}>View your invite →</a>
-          </p>
+          {shareUrl ? (
+            <>
+              <p>Share this link:</p>
+              <code>{shareUrl}</code>
+              <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+                <a href={`/invite/${createdId}`}>View invite →</a>
+                <button
+                  onClick={() => {
+                    if (navigator.share) {
+                      navigator.share({ title: 'Nowish invite', url: shareUrl });
+                    } else {
+                      navigator.clipboard.writeText(shareUrl);
+                      alert('Link copied!');
+                    }
+                  }}
+                >
+                  Share
+                </button>
+                <a href="/my">Go to My Invites →</a>
+              </div>
+            </>
+          ) : (
+            <p>
+              <a href={`/invite/${createdId}`}>View your invite →</a>
+            </p>
+          )}
         </div>
       )}
     </main>
