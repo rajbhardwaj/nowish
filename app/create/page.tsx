@@ -184,42 +184,46 @@ export default function CreateInvitePage() {
   return (
     <div className="space-y-6">
       {/* signed in banner */}
-      <div className="rounded-xl border border-slate-200 bg-white/70 px-4 py-2 text-sm text-slate-700 shadow-sm">
-        You’re signed in as <span className="font-medium">{user?.email ?? '—'}</span>
+      <div className="rounded-xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 shadow-sm">
+        You're signed in as <span className="font-medium">{user?.email ?? '—'}</span>
       </div>
 
-      <h1 className="text-4xl font-extrabold tracking-tight text-slate-900">Create an invite</h1>
-      <p className="text-slate-600">Write it how you’d text it. We’ll parse the time.</p>
+      <header className="space-y-2">
+        <h1 className="text-4xl font-bold tracking-tight text-slate-900">Create an invite</h1>
+        <p className="text-slate-600">Write it how you'd text it. We'll parse the time.</p>
+      </header>
 
-      <div className="rounded-2xl border border-slate-200 bg-white/80 p-5 shadow-lg">
+      <div className="rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-lg backdrop-blur-sm">
         {/* What are you doing */}
-        <label className="block text-lg font-semibold text-slate-800">
-          What are you doing?
-        </label>
-        <input
-          className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none ring-0 placeholder:text-slate-400 focus:border-sky-500"
-          placeholder='e.g. "Park with kids, 3–5p today"'
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          autoFocus
-        />
+        <div className="space-y-2">
+          <label className="block text-lg font-semibold text-slate-900">
+            What are you doing?
+          </label>
+          <input
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+            placeholder='e.g. "Park with kids, 3–5p today"'
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            autoFocus
+          />
 
-        {/* Preview */}
-        <div className="mt-2 text-sm text-slate-500">
-          <span className="font-medium">Preview:</span>{' '}
-          {parsed.start ? (
-            <span className="text-slate-700">{preview}</span>
-          ) : (
-            <span>add a time so we can parse it</span>
-          )}
+          {/* Preview */}
+          <div className="text-sm text-slate-500">
+            <span className="font-medium">Preview:</span>{' '}
+            {parsed.start ? (
+              <span className="text-slate-700">{preview}</span>
+            ) : (
+              <span>add a time so we can parse it</span>
+            )}
+          </div>
         </div>
 
         {/* Circle & Host */}
-        <div className="mt-6 grid gap-5 md:grid-cols-2">
-          <div>
-            <label className="block text-lg font-semibold text-slate-800">Who’s this for?</label>
+        <div className="mt-6 grid gap-6 md:grid-cols-2">
+          <div className="space-y-2">
+            <label className="block text-lg font-semibold text-slate-900">Who's this for?</label>
             <select
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:border-sky-500"
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
               value={circle}
               onChange={(e) => setCircle(e.target.value as Circle)}
             >
@@ -229,74 +233,76 @@ export default function CreateInvitePage() {
             </select>
           </div>
 
-          <div>
-            <label className="block text-lg font-semibold text-slate-800">
+          <div className="space-y-2">
+            <label className="block text-lg font-semibold text-slate-900">
               Your name (shows on invite)
             </label>
             <input
-              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:border-sky-500"
+              className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
               value={hostName}
               onChange={(e) => setHostName(e.target.value)}
             />
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="text-xs text-slate-500">
               Optional — defaults to your email handle.
             </p>
           </div>
         </div>
 
         {/* Actions */}
-        <div className="mt-6 flex flex-wrap items-center gap-3">
+        <div className="mt-6 space-y-4">
           <button
             onClick={handleCreate}
             disabled={!canCreate}
-            className={`rounded-xl px-5 py-3 text-white shadow disabled:cursor-not-allowed ${
+            className={`rounded-xl px-6 py-3 font-semibold text-white shadow-lg transition-all duration-200 disabled:cursor-not-allowed ${
               canCreate
-                ? 'bg-sky-600 hover:bg-sky-700'
+                ? 'bg-blue-600 hover:bg-blue-700 hover:shadow-xl active:scale-95'
                 : 'bg-slate-300'
             }`}
           >
             {creating ? 'Creating…' : 'Create Invite'}
           </button>
 
-          {link ? (
-            <>
-              <span className="text-sm text-slate-600">Link ready:</span>
-              <input
-                readOnly
-                value={link}
-                className="min-w-[260px] flex-1 rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-slate-700"
-                onFocus={(e) => e.currentTarget.select()}
-              />
-              <button
-                onClick={copyLink}
-                className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm text-slate-800 hover:bg-slate-50"
-              >
-                Copy
-              </button>
-              <button
-                onClick={shareLink}
-                className="rounded-xl border border-sky-300 bg-white px-4 py-2 text-sm text-sky-700 hover:bg-sky-50"
-              >
-                Share…
-              </button>
-            </>
-          ) : (
-            <p className="text-sm text-slate-500">Link will appear here after you create.</p>
+          {link && (
+            <div className="space-y-3">
+              <div className="text-sm font-medium text-slate-600">Link ready:</div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <input
+                  readOnly
+                  value={link}
+                  className="flex-1 rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  onFocus={(e) => e.currentTarget.select()}
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={copyLink}
+                    className="rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  >
+                    Copy
+                  </button>
+                  <button
+                    onClick={shareLink}
+                    className="rounded-xl border border-blue-300 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  >
+                    Share
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Error */}
+          {errorMsg && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {errorMsg}
+            </div>
           )}
         </div>
-
-        {/* Error */}
-        {errorMsg && (
-          <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-            {errorMsg}
-          </div>
-        )}
       </div>
 
-      <p className="text-sm text-slate-500">
-        Tip: try <span className="font-medium">“Park with kids, 3–5p today”</span> or{' '}
-        <span className="font-medium">“Dinner, 7:30pm tomorrow”</span>.
-      </p>
+      <div className="text-sm text-slate-500">
+        <span className="font-medium">Tip:</span> try <span className="font-medium">"Park with kids, 3–5p today"</span> or{' '}
+        <span className="font-medium">"Dinner, 7:30pm tomorrow"</span>.
+      </div>
     </div>
   );
 }
