@@ -117,12 +117,14 @@ export default function CreateInvitePage() {
       const url = `${BASE}/invite/${data.id}`;
       setCreatedUrl(url);
     } catch (e: unknown) {
-      const msg =
-        e instanceof Error ? e.message : 'Could not create invite.';
-      alert(msg);
-    } finally {
-      setCreating(false);
-    }
+  // Show the actual Supabase/Postgres error
+  const msg =
+    (e as any)?.message ??
+    (typeof e === 'string' ? e : JSON.stringify(e));
+  alert(`Create failed: ${msg}`);
+} finally {
+  setCreating(false);
+}
   }
 
   // Nicely formatted preview line (for your own confidence while typing)
