@@ -26,7 +26,6 @@ export const metadata: Metadata = {
     icon: '/favicon.ico',
     apple: '/apple-touch-icon.png',
   },
-  // Keep this minimal — Next expects only these fields here
   robots: {
     index: true,
     follow: true,
@@ -47,7 +46,28 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body
+        style={{
+          margin: 0,
+          minHeight: '100vh',
+          backgroundColor: '#0b1220', // dark background
+          color: '#e5e7eb',           // light gray text
+          WebkitFontSmoothing: 'antialiased',
+          MozOsxFontSmoothing: 'grayscale',
+          fontFamily:
+            'ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"',
+        }}
+      >
+        <main
+          style={{
+            maxWidth: 640,        // ~max-w-screen-sm
+            margin: '0 auto',
+            padding: '24px 16px', // ~py-6 px-4
+          }}
+        >
+          {children}
+        </main>
+      </body>
     </html>
   );
 }
