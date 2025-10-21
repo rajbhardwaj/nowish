@@ -54,9 +54,7 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
 
   const title = invite?.title ? `Nowish: ${invite.title}` : 'Nowish Invite';
   const when = formatWhen(invite?.window_start, invite?.window_end);
-
-  const imgDynamic = `${base}/api/og/${params.id}.png?v=5`;
-  const imgFallback = `${base}/og-fallback.png?v=1`;
+  const ogUrl = `/invite/${params.id}/opengraph-image`;
 
   return {
     title,
@@ -66,30 +64,27 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
       description: when,
       url: `${base}/invite/${params.id}`,
       siteName: 'Nowish',
-      images: [
-        { url: imgDynamic, width: 1200, height: 630, alt: 'Nowish Invite' },
-        { url: imgFallback, width: 1200, height: 630, alt: 'Nowish Invite (fallback)' },
-      ],
+      images: [{ url: ogUrl, width: 1200, height: 630, alt: 'Nowish Invite' }],
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description: when,
-      images: [imgDynamic, imgFallback],
+      images: [ogUrl],
     },
     alternates: { canonical: `${base}/invite/${params.id}` },
     other: {
       'og:image:width': '1200',
       'og:image:height': '630',
       'og:image:type': 'image/png',
-      'og:image:secure_url': imgDynamic,
+      'og:image:secure_url': `${base}${ogUrl}`,
     },
   };
 }
 
 // ---- Page component (server) ----
 export default async function Page({ params }: { params: { id: string } }) {
-  // Optional: verify the invite exists to show a 404 if not
+  // Optional: verify invite exists
   const { data: exists } = await supabaseServer
     .from('open_invites')
     .select('id')
@@ -98,6 +93,6 @@ export default async function Page({ params }: { params: { id: string } }) {
 
   if (!exists) return notFound();
 
-  // Render the interactive client component with the ID it expects
+  // Render the interactive client component
   return <InviteClient inviteId={params.id} />;
 }
