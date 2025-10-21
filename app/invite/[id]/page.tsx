@@ -1,12 +1,40 @@
 import { createClient } from '@supabase/supabase-js';
 import InviteClient from './InviteClient';
 
-// Server-side Supabase (anon key OK on server)
-const supabaseServer = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_ANON_KEY!,
-  { global: { fetch } }
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey =
+  process.env.SUPABASE_ANON_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseServer = createClient(supabaseUrl, supabaseKey, { global: { fetch } });
+
+// Use a stable IANA timezone for rendering OG/meta previews.
+// You can set NEXT_PUBLIC_DEFAULT_TZ in Vercel if you prefer another.
+const DEFAULT_TZ = process.env.NEXT_PUBLIC_DEFAULT_TZ || 'America/Chicago';
+
+function formatWindow(startISO?: string | null, endISO?: string | null, tz = DEFAULT_TZ) {
+  if (!startISO || !endISO) return null;
+  const start = new Date(startISO);
+  const end = new Date(endISO);
+
+  const dateFmt = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz,
+    dateStyle: 'medium',
+  });
+  const timeFmt = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz,
+    timeStyle: 'short',
+  });
+
+  const sameDay =
+    new Intl.DateTimeFormat('en-CA', { timeZone: tz, dateStyle: 'short' }).format(start) ===
+    new Intl.DateTimeFormat('en-CA', { timeZone: tz, dateStyle: 'short' }).format(end);
+
+  const datePart = dateFmt.format(start);
+  const startTime = timeFmt.format(start);
+  const endTime = timeFmt.format(end);
+
+  return sameDay ? `${datePart}, ${startTime} – ${endTime}` : `${datePart} ${startTime} → ${dateFmt.format(end)} ${endTime}`;
+}
 
 export async function generateMetadata({ params }: { params: { id: string } }) {
   const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://nowish.vercel.app';
@@ -18,26 +46,15 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
     .maybeSingle();
 
   const title = invite?.title ? `Nowish: ${invite.title}` : 'Nowish Invite';
-  const desc =
-    invite?.window_start && invite?.window_end
-      ? new Date(invite.window_start).toLocaleString([], {
-          dateStyle: 'medium',
-          timeStyle: 'short',
-        }) +
-        ' – ' +
-        new Date(invite.window_end).toLocaleTimeString([], {
-          timeStyle: 'short',
-        })
-      : 'Join this Nowish invite';
-
+  const when = formatWindow(invite?.window_start, invite?.window_end) || 'Join this Nowish invite';
   const ogImage = `${base}/invite/${params.id}/opengraph-image`;
 
   return {
     title,
-    description: desc,
+    description: when,
     openGraph: {
       title,
-      description: desc,
+      description: when,
       url: `${base}/invite/${params.id}`,
       siteName: 'Nowish',
       images: [ogImage],
@@ -45,7 +62,7 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
     twitter: {
       card: 'summary_large_image',
       title,
-      description: desc,
+      description: when,
       images: [ogImage],
     },
   };
@@ -67,23 +84,14 @@ export default async function InvitePage({ params }: { params: { id: string } })
     );
   }
 
+  const when = formatWindow(invite.window_start, invite.window_end) ?? '';
+
   return (
     <main style={{ maxWidth: 720, margin: '1.5rem auto', padding: 16 }}>
       <h1 style={{ fontSize: 'clamp(24px,5vw,36px)' }}>{invite.title}</h1>
-      <p style={{ color: '#555' }}>
-        {invite.window_start
-          ? new Date(invite.window_start).toLocaleString([], {
-              dateStyle: 'medium',
-              timeStyle: 'short',
-            }) +
-            ' – ' +
-            new Date(invite.window_end).toLocaleTimeString([], {
-              timeStyle: 'short',
-            })
-          : ''}
-      </p>
+      <p style={{ color: '#555' }}>{when}</p>
 
-      {/* Client component handles RSVP interactions */}
+      {/* Client component handles RSVP interactions + identity prompt for guests */}
       <InviteClient inviteId={invite.id} />
     </main>
   );

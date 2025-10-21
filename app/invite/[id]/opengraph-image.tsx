@@ -6,11 +6,38 @@ export const alt = 'Nowish Invite';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
-const supabaseServer = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_ANON_KEY!,
-  { global: { fetch } }
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey =
+  process.env.SUPABASE_ANON_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseServer = createClient(supabaseUrl, supabaseKey, { global: { fetch } });
+
+const DEFAULT_TZ = process.env.NEXT_PUBLIC_DEFAULT_TZ || 'America/Chicago';
+
+function formatWindow(startISO?: string | null, endISO?: string | null, tz = DEFAULT_TZ) {
+  if (!startISO || !endISO) return 'Join this activity';
+  const start = new Date(startISO);
+  const end = new Date(endISO);
+
+  const dateFmt = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz,
+    dateStyle: 'medium',
+  });
+  const timeFmt = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz,
+    timeStyle: 'short',
+  });
+
+  const sameDay =
+    new Intl.DateTimeFormat('en-CA', { timeZone: tz, dateStyle: 'short' }).format(start) ===
+    new Intl.DateTimeFormat('en-CA', { timeZone: tz, dateStyle: 'short' }).format(end);
+
+  const datePart = dateFmt.format(start);
+  const startTime = timeFmt.format(start);
+  const endTime = timeFmt.format(end);
+
+  return sameDay ? `${datePart}, ${startTime} — ${endTime}` : `${datePart} ${startTime} → ${dateFmt.format(end)} ${endTime}`;
+}
 
 export default async function OgImage({ params }: { params: { id: string } }) {
   const { data: invite } = await supabaseServer
@@ -20,12 +47,7 @@ export default async function OgImage({ params }: { params: { id: string } }) {
     .maybeSingle();
 
   const title = invite?.title || 'Nowish Invite';
-  const when =
-    invite?.window_start && invite?.window_end
-      ? `${new Date(invite.window_start).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })} — ${new Date(
-          invite.window_end
-        ).toLocaleTimeString([], { timeStyle: 'short' })}`
-      : 'Join this activity';
+  const when = formatWindow(invite?.window_start, invite?.window_end);
 
   return new ImageResponse(
     (
