@@ -26,32 +26,26 @@ export const metadata: Metadata = {
     icon: '/favicon.ico',
     apple: '/apple-touch-icon.png',
   },
-  robots: {
-    index: true,
-    follow: true,
-  },
+  robots: { index: true, follow: true },
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#0b1220',
-  colorScheme: 'light dark',
+  themeColor: '#ffffff',
+  colorScheme: 'light',
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body
         style={{
           margin: 0,
           minHeight: '100vh',
-          backgroundColor: '#0b1220', // dark background
-          color: '#e5e7eb',           // light gray text
+          background:
+            'linear-gradient(180deg, #ffffff 0%, #f7fafc 40%, #eef2f7 100%)',
+          color: '#0f172a',
           WebkitFontSmoothing: 'antialiased',
           MozOsxFontSmoothing: 'grayscale',
           fontFamily:
@@ -60,9 +54,9 @@ export default function RootLayout({
       >
         <main
           style={{
-            maxWidth: 640,        // ~max-w-screen-sm
+            maxWidth: 640,
             margin: '0 auto',
-            padding: '24px 16px', // ~py-6 px-4
+            padding: '24px 16px',
           }}
         >
           {children}
