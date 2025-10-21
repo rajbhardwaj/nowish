@@ -53,27 +53,28 @@ export default async function Image({
 }: {
   params: { id: string };
 }) {
-  // Minimal supabase client for read-only fetch
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: { persistSession: false },
-  });
+  try {
+    // Minimal supabase client for read-only fetch
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: { persistSession: false },
+    });
 
-  // Fetch invite
-  const { data } = await supabase
-    .from('open_invites')
-    .select('id,title,window_start,window_end,host_name')
-    .eq('id', params.id)
-    .maybeSingle<InviteRow>();
+    // Fetch invite
+    const { data } = await supabase
+      .from('open_invites')
+      .select('id,title,window_start,window_end,host_name')
+      .eq('id', params.id)
+      .maybeSingle<InviteRow>();
 
-  // Fallbacks if not found
-  const title = data?.title ?? 'Nowish Invite';
-  const when =
-    data ? formatWhen(data.window_start, data.window_end) : 'Happening soon';
-  const host = data?.host_name ?? null;
+    // Fallbacks if not found
+    const title = data?.title ?? 'Nowish Invite';
+    const when =
+      data ? formatWhen(data.window_start, data.window_end) : 'Happening soon';
+    const host = data?.host_name ?? null;
 
-  // Simple dark card
+  // Simple, reliable card for iMessage
   return new ImageResponse(
     (
       <div
@@ -82,13 +83,12 @@ export default async function Image({
           height: size.height,
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'space-between',
-          padding: 56,
-          background:
-            'radial-gradient(1200px 600px at 0% 0%, #0e1628 0%, #0b1220 40%, #0a0f1a 100%)',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 40,
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           color: 'white',
-          fontFamily:
-            'ui-sans-serif, -apple-system, Segoe UI, Roboto, Helvetica, Arial, Apple Color Emoji, Segoe UI Emoji',
+          fontFamily: 'system-ui, -apple-system, sans-serif',
         }}
       >
         {/* Header */}
@@ -128,4 +128,29 @@ export default async function Image({
     ),
     { width: size.width, height: size.height }
   );
+  } catch (error) {
+    console.error('OpenGraph image generation failed:', error);
+    // Fallback to simple image
+    return new ImageResponse(
+      (
+        <div
+          style={{
+            width: size.width,
+            height: size.height,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            color: 'white',
+            fontFamily: 'system-ui, sans-serif',
+          }}
+        >
+          <div style={{ fontSize: 48, fontWeight: 700 }}>Nowish</div>
+          <div style={{ fontSize: 24, opacity: 0.9 }}>Join the invite</div>
+        </div>
+      ),
+      { width: size.width, height: size.height }
+    );
+  }
 }
