@@ -55,7 +55,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
   const title = invite?.title ? `Nowish: ${invite.title}` : 'Nowish Invite';
   const when = formatWhen(invite?.window_start, invite?.window_end);
-  // Try static image first to test if meta tags work
+  // Try dynamic image with simplified generation
   const ogUrl = `${base}/invite/${id}/opengraph-image`;
 
   return {

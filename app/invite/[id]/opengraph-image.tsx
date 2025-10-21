@@ -74,7 +74,7 @@ export default async function Image({
       data ? formatWhen(data.window_start, data.window_end) : 'Happening soon';
     const host = data?.host_name ?? null;
 
-  // Simple, reliable card for iMessage
+  // Ultra-simple image that iMessage can definitely load
   return new ImageResponse(
     (
       <div
@@ -85,44 +85,19 @@ export default async function Image({
           flexDirection: 'column',
           justifyContent: 'center',
           alignItems: 'center',
-          padding: 40,
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          background: '#1a1a1a',
           color: 'white',
-          fontFamily: 'system-ui, -apple-system, sans-serif',
+          fontFamily: 'Arial, sans-serif',
         }}
       >
-        {/* Header */}
-        <div style={{ fontSize: 28, opacity: 0.8 }}>Nowish</div>
-
-        {/* Title + time */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div
-            style={{
-              fontSize: 74,
-              fontWeight: 700,
-              lineHeight: 1.1,
-              letterSpacing: -1,
-            }}
-          >
-            {title}
-          </div>
-          <div style={{ fontSize: 32, opacity: 0.9 }}>{when}</div>
-          {host ? (
-            <div style={{ fontSize: 28, opacity: 0.8 }}>from {host}</div>
-          ) : null}
+        <div style={{ fontSize: 60, fontWeight: 'bold', marginBottom: 20 }}>
+          {title}
         </div>
-
-        {/* Footer row */}
-        <div
-          style={{
-            display: 'flex',
-            width: '100%',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <div style={{ fontSize: 28, opacity: 0.9 }}>Tap to RSVP →</div>
-          <div style={{ fontSize: 24, opacity: 0.6 }}>nowish.vercel.app</div>
+        <div style={{ fontSize: 30, opacity: 0.8 }}>
+          {when}
+        </div>
+        <div style={{ fontSize: 24, marginTop: 20, opacity: 0.6 }}>
+          Tap to RSVP
         </div>
       </div>
     ),
