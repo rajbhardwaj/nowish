@@ -8,16 +8,21 @@ export default function CreateInvitePage() {
   const [shareUrl, setShareUrl] = useState('');
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
-  useEffect(() => {
-    // make sure someone is signed in
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) {
-        window.location.href = '/login';
-      } else {
-        setUserEmail(data.user.email || null);
-      }
-    });
-  }, []);
+  const [checking, setChecking] = useState(true);
+
+    useEffect(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (!session) {
+                window.location.href = '/login';
+            } else { 
+                setChecking(false);
+            }
+        });
+    }, []);
+
+if (checking) {
+  return <main style={{ padding: 24 }}>Loading…</main>;
+}
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
