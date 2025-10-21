@@ -113,18 +113,15 @@ export default function CreateInvitePage() {
 
     setCreating(true);
     try {
-      // open_invites column names assumed from earlier schema you shared
       const { data, error } = await supabase
         .from('open_invites')
         .insert([
           {
             creator_id: user.id,
             title: parsed.title,
-            start_time: parsed.start.toISOString(),
-            end_time: parsed.end.toISOString(),
+            window_start: parsed.start.toISOString(),
+            window_end: parsed.end.toISOString(),
             host_name: hostName || user.email?.split('@')[0],
-            circle: circle,                 // keep for compatibility if you still have this column
-            circle_ids: [],                 // safe default for not-null schemas
           },
         ])
         .select('id')
