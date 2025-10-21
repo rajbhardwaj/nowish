@@ -4,3 +4,118 @@
 
 /* optional smoothing */
 html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+
+/* ---------- Nowish: Create page UI polish ---------- */
+
+:root{
+  --bg1: #f7fafc;
+  --bg2: #eef2f7;
+  --ink: #0f172a;         /* slate-900-ish */
+  --muted: #64748b;       /* slate-500-ish */
+  --ring: #2563eb;        /* blue-600 */
+  --line: #e5e7eb;        /* gray-200 */
+  --card: #ffffff;
+}
+
+body {
+  background: radial-gradient(1200px 600px at 20% -5%, var(--bg2), var(--bg1));
+  color: var(--ink);
+}
+
+/* page shell */
+.nw-container {
+  max-width: 680px;
+  margin-inline: auto;
+  padding: 20px 16px 48px;
+}
+
+/* header banner */
+.nw-banner {
+  background: #eef2ff;
+  color: #1e293b;
+  border: 1px solid #c7d2fe;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+/* card */
+.nw-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 6px 20px rgba(2, 6, 23, 0.05);
+}
+
+/* spacing */
+.nw-stack > * + * { margin-top: 18px; }
+
+/* labels/helps */
+.nw-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.nw-help {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* inputs */
+.nw-input,
+.nw-select {
+  width: 100%;
+  font-size: 16px;         /* no iOS zoom */
+  line-height: 1.4;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  outline: none;
+  box-sizing: border-box;
+}
+.nw-input:focus,
+.nw-select:focus {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* actions */
+.nw-actions { display: flex; gap: 10px; align-items: center; }
+
+.nw-btn {
+  appearance: none;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-weight: 600;
+  font-size: 16px;
+  color: #fff;
+  background: linear-gradient(180deg, #2563eb, #1d4ed8);
+  box-shadow: 0 6px 16px rgba(29, 78, 216, 0.25);
+  cursor: pointer;
+}
+.nw-btn[disabled] {
+  opacity: .6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.nw-inline {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  color: var(--muted);
+}
+.nw-kbd {
+  font: inherit;
+  background: #f1f5f9;
+  border: 1px solid var(--line);
+  border-bottom-color: #cbd5e1;
+  padding: 0 6px;
+  border-radius: 6px;
+}

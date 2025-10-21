@@ -6,235 +6,221 @@ import * as chrono from 'chrono-node';
 
 type Circle = 'Family' | 'Close Friends' | 'Coworkers';
 
-// Client Supabase (uses anon key on the client)
+type ParsedWindow = {
+  title: string;
+  start: Date;
+  end: Date;
+};
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-export default function CreateInvitePage() {
-  const [text, setText] = useState<string>('');
-  const [circle, setCircle] = useState<Circle>('Family');
-  const [hostName, setHostName] = useState<string>('');
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [creating, setCreating] = useState<boolean>(false);
-  const [resultUrl, setResultUrl] = useState<string | null>(null);
+const BASE =
+  process.env.NEXT_PUBLIC_BASE_URL ?? 'https://nowish.vercel.app';
 
-  // load session + sensible default for host name
+export default function CreateInvitePage() {
+  const [sessionEmail, setSessionEmail] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  const [rawText, setRawText] = useState('');
+  const [circle, setCircle] = useState<Circle>('Family');
+  const [hostName, setHostName] = useState(''); // defaults later
+  const [creating, setCreating] = useState(false);
+  const [createdUrl, setCreatedUrl] = useState<string | null>(null);
+
+  // Load session info so we can attach creator_id and default hostName
   useEffect(() => {
     (async () => {
       const { data } = await supabase.auth.getSession();
-      const email = data.session?.user?.email ?? null;
-      setUserEmail(email);
-      if (email && !hostName) setHostName(email.split('@')[0]);
+      const email = data.session?.user.email ?? null;
+      const uid = data.session?.user.id ?? null;
+      setSessionEmail(email);
+      setUserId(uid);
+
+      if (!hostName && email) {
+        const handle = email.split('@')[0];
+        setHostName(handle);
+      }
     })();
-  }, [hostName]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // preview of what we parsed (nice little affordance)
-  const parsedSummary = useMemo(() => {
-    const results = chrono.parse(text);
-    if (!results.length) return null;
-    const r = results[0];
-    const start = r.start?.date();
-    const end = r.end?.date();
-    if (!start) return null;
+  // Parse times/title as user types
+  const parsed: ParsedWindow | null = useMemo(() => {
+    if (!rawText.trim()) return null;
 
-    const fmt = (d: Date) =>
-      d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-    const day =
-      start.toDateString() === new Date().toDateString()
-        ? 'today'
-        : start.toLocaleDateString(undefined, {
-            weekday: 'short',
-            month: 'short',
-            day: 'numeric',
-          });
+    const ref = new Date();
+    const results = chrono.parse(rawText, ref, { forwardDate: true });
 
-    return end ? `${fmt(start)}–${fmt(end)} ${day}` : `${fmt(start)} ${day}`;
-  }, [text]);
+    // title = rawText minus the time chunk if we can detect it
+    let title = rawText.trim();
 
-  async function handleCreateInvite() {
-    if (!text.trim()) return;
-    setCreating(true);
-    setResultUrl(null);
+    if (results.length) {
+      const r = results[0];
+      const start = r.start?.date() ?? ref;
+      const end =
+        r.end?.date() ??
+        new Date(start.getTime() + 60 * 60 * 1000); // +1h default
 
-    try {
-      // Parse natural language time
-      const results = chrono.parse(text);
-      let title = text.trim();
-      let window_start: string | null = null;
-      let window_end: string | null = null;
-
-      if (results.length) {
-        const r = results[0];
-        if (r.start) window_start = r.start.date().toISOString();
-        if (r.end) window_end = r.end.date().toISOString();
-        // pull the time phrase out of the title for a cleaner subject
-        if (r.text) {
-          const stripped = title.replace(r.text, '').trim();
-          if (stripped) title = stripped;
-        }
+      // Try to drop the matched time text from title
+      try {
+        const before = rawText.slice(0, r.index).trim();
+        const after = rawText.slice(r.index + r.text.length).trim();
+        const guess = [before, after].filter(Boolean).join(' ');
+        if (guess) title = guess;
+      } catch {
+        /* noop */
       }
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      return { title: title || 'Hang', start, end };
+    }
 
-      const insertPayload = {
-        title,
-        circle,
-        host_name: hostName || userEmail?.split('@')[0] || 'Someone',
-        window_start,
-        window_end,
-        creator_id: user?.id ?? null,
-      };
+    // Fallback: no parse → just use now +1h
+    return {
+      title: title || 'Hang',
+      start: ref,
+      end: new Date(ref.getTime() + 60 * 60 * 1000),
+    };
+  }, [rawText]);
 
+  async function handleCreate() {
+    if (!userId) {
+      alert('Please sign in again.');
+      return;
+    }
+    if (!parsed) {
+      alert('Tell us what & when (e.g. “Park with kids, 3–5p today”).');
+      return;
+    }
+
+    setCreating(true);
+    try {
+      const { title, start, end } = parsed;
+
+      // Insert into open_invites. Adjust column names if yours differ.
       const { data, error } = await supabase
         .from('open_invites')
-        .insert([insertPayload])
+        .insert({
+          title,
+          window_start: start.toISOString(),
+          window_end: end.toISOString(),
+          circle,
+          host_name: hostName || sessionEmail?.split('@')[0] || 'Me',
+          creator_id: userId, // ← fixes the NOT NULL you saw earlier
+        })
         .select('id')
         .single();
 
       if (error) throw error;
 
-      setResultUrl(`/invite/${data.id}`);
-      setText('');
-    } catch (err) {
-      console.error(err);
-      alert('Something went wrong creating the invite.');
+      const url = `${BASE}/invite/${data.id}`;
+      setCreatedUrl(url);
+    } catch (e: unknown) {
+      const msg =
+        e instanceof Error ? e.message : 'Could not create invite.';
+      alert(msg);
     } finally {
       setCreating(false);
     }
   }
 
+  // Nicely formatted preview line (for your own confidence while typing)
+  const previewLine = useMemo(() => {
+    if (!parsed) return '—';
+    const start = new Intl.DateTimeFormat(undefined, {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    }).format(parsed.start);
+    const end = new Intl.DateTimeFormat(undefined, {
+      hour: 'numeric',
+      minute: '2-digit',
+    }).format(parsed.end);
+    return `${parsed.title} — ${start} to ${end}`;
+  }, [parsed]);
+
   return (
-    <div className="mx-auto w-full max-w-screen-sm px-4 py-8">
-      {/* Signed-in banner */}
-      {userEmail && (
-        <div className="mb-6 rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-700 ring-1 ring-slate-200 dark:bg-slate-800/60 dark:text-slate-100 dark:ring-slate-700">
-          You’re signed in as <span className="font-semibold">{userEmail}</span>
-        </div>
+    <div className="nw-container">
+      {sessionEmail && (
+        <div className="nw-banner">You’re signed in as <strong>{sessionEmail}</strong></div>
       )}
 
-      {/* Title */}
-      <h1 className="mb-2 bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-4xl font-extrabold text-transparent dark:from-white dark:to-slate-300">
+      <h1 style={{ fontSize: 44, lineHeight: 1.1, marginBottom: 14 }}>
         Create an invite
       </h1>
-      <p className="mb-6 text-slate-600 dark:text-slate-300">
+
+      <p style={{ fontSize: 18, color: 'var(--muted)', marginBottom: 16 }}>
         Write it how you’d text it. We’ll parse the time.
       </p>
 
-      {/* Card */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        {/* Activity */}
-        <label
-          htmlFor="activity"
-          className="block text-sm font-medium text-slate-700 dark:text-slate-200"
-        >
-          What are you doing?
-        </label>
-        <input
-          id="activity"
-          className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:focus:ring-slate-700"
-          placeholder='e.g. Park with kids, 3–5p today'
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          autoFocus
-        />
+      <div className="nw-card nw-stack" role="form" aria-labelledby="create-invite">
+        {/* What */}
+        <div>
+          <label htmlFor="what" className="nw-label">What are you doing?</label>
+          <input
+            id="what"
+            className="nw-input"
+            placeholder='e.g. "Park with kids, 3–5p today"'
+            value={rawText}
+            onChange={(e) => setRawText(e.target.value)}
+            autoCapitalize="sentences"
+            autoComplete="off"
+          />
+          <div className="nw-help">Preview: {previewLine}</div>
+        </div>
 
-        {parsedSummary && (
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-            ⏱️ We’ll set the time to <span className="font-medium">{parsedSummary}</span>
-          </p>
-        )}
+        {/* Circle */}
+        <div>
+          <label htmlFor="circle" className="nw-label">Who’s this for?</label>
+          <select
+            id="circle"
+            className="nw-select"
+            value={circle}
+            onChange={(e) => setCircle(e.target.value as Circle)}
+          >
+            <option>Family</option>
+            <option>Close Friends</option>
+            <option>Coworkers</option>
+          </select>
+        </div>
 
-        {/* Circle & Host in a responsive grid */}
-        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label
-              htmlFor="circle"
-              className="block text-sm font-medium text-slate-700 dark:text-slate-200"
-            >
-              Who’s this for?
-            </label>
-            <select
-              id="circle"
-              value={circle}
-              onChange={(e) => setCircle(e.target.value as Circle)}
-              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base text-slate-900 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:focus:ring-slate-700"
-            >
-              <option value="Family">Family</option>
-              <option value="Close Friends">Close Friends</option>
-              <option value="Coworkers">Coworkers</option>
-            </select>
-          </div>
-
-          <div>
-            <label
-              htmlFor="host"
-              className="block text-sm font-medium text-slate-700 dark:text-slate-200"
-            >
-              Your name (shows on invite)
-            </label>
-            <input
-              id="host"
-              value={hostName}
-              onChange={(e) => setHostName(e.target.value)}
-              placeholder="Raj"
-              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base text-slate-900 placeholder:text-slate-400 focus:border-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:ring-slate-700"
-            />
-            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-              Optional — defaults to your email handle.
-            </p>
+        {/* Host display name */}
+        <div>
+          <label htmlFor="host" className="nw-label">Your name (shows on invite)</label>
+          <input
+            id="host"
+            className="nw-input"
+            value={hostName}
+            onChange={(e) => setHostName(e.target.value)}
+            placeholder="e.g. Raj"
+            aria-describedby="host-help"
+          />
+          <div id="host-help" className="nw-help">
+            Optional — defaults to your email handle.
           </div>
         </div>
 
-        {/* Create button */}
-        <div className="mt-6">
+        {/* Actions */}
+        <div className="nw-actions">
           <button
-            onClick={handleCreateInvite}
-            disabled={!text.trim() || creating}
-            className="inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-base font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+            className="nw-btn"
+            onClick={handleCreate}
+            disabled={!parsed || creating}
           >
             {creating ? 'Creating…' : 'Create Invite'}
           </button>
+
+          {createdUrl && (
+            <span className="nw-inline">
+              Link ready:
+              <code className="nw-kbd">{createdUrl}</code>
+            </span>
+          )}
         </div>
       </div>
-
-      {/* Result card */}
-      {resultUrl && (
-        <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <p className="text-slate-800 dark:text-slate-100">
-            ✅ Invite created! Share this link:
-          </p>
-          <div className="mt-3 flex items-center gap-3">
-            <code className="flex-1 truncate rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-800 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-700">
-              {resultUrl}
-            </code>
-            <button
-              className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
-              onClick={async () => {
-                const url =
-                  location.origin.replace(/\/$/, '') + resultUrl.replace(/^\//, '');
-                try {
-                  await navigator.clipboard.writeText(url);
-                  alert('Link copied!');
-                } catch {
-                  window.prompt('Copy link:', url);
-                }
-              }}
-            >
-              Copy
-            </button>
-            <a
-              href={resultUrl}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-            >
-              View
-            </a>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
