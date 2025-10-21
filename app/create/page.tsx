@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useRouter } from 'next/navigation';
-import chrono from 'chrono-node';
+import * as chrono from 'chrono-node';
 
 // ---- types -------------------------------------------------
 
