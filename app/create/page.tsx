@@ -127,84 +127,86 @@ export default function CreateInvitePage() {
 
   const canSubmit = !!raw.trim() && !!liveStart && !!liveEnd;
 
-  async function handleCreate() {
-    if (!canSubmit) return;
+async function handleCreate() {
+  if (!canSubmit) return;
 
-    try {
-      setCreating(true);
-      setCreatedLink(null);
+  try {
+    setCreating(true);
+    setCreatedLink(null);
 
-      // Make sure we still have a user
-      const { data: auth } = await supabase.auth.getUser();
-      const user = auth.user;
-      if (!user) {
-        alert('Please sign in.');
-        setCreating(false);
-        return;
-      }
-
-      // Reuse live parse; if not present, do a just-in-time parse.
-      let start = liveStart;
-      let end = liveEnd;
-      if ((!start || !end) && !chronoMod) {
-        const cm = await import('chrono-node');
-        const res = cm.parse(raw, new Date(), { forwardDate: true });
-        if (res.length) {
-          const r = res[0];
-          start = r.start?.date() ?? null;
-          end = r.end?.date() ?? (start ? new Date(start.getTime() + 60 * 60 * 1000) : null);
-        }
-      }
-
-      if (!start || !end) {
-        alert('Please include a time (for example: “Park with kids, 3–5p today”).');
-        setCreating(false);
-        return;
-      }
-
-      const title = previewTitle || 'Hang';
-      const host = hostName.trim() || (signedInAs ? emailHandle(signedInAs) : 'Me');
-
-      const { data, error } = await supabase
-        .from('open_invites')
-        .insert({
-          creator_id: user.id,
-          title,
-          window_start: start.toISOString(),
-          window_end: end.toISOString(),
-          host_name: host,
-          circle, // enum/text column
-        })
-        .select('id')
-        .single();
-
-      if (error) {
-        console.error('Create failed:', error);
-        alert('Could not create invite.');
-        setCreating(false);
-        return;
-      }
-
-      const base = process.env.NEXT_PUBLIC_BASE_URL || 'https://nowish.vercel.app';
-      const url = `${base}/invite/${data.id}`;
-      setCreatedLink(url);
-
-      // Try Web Share (no `any`)
-      if (typeof navigator !== 'undefined' && hasShare(navigator)) {
-        try {
-          await navigator.share({
-            title,
-            text: `${title} — ${previewWhen}`,
-            url,
-          });
-        } catch {
-          // user cancelled
-        }
-      }
-    } finally {
+    // Ensure user is signed in
+    const { data: auth } = await supabase.auth.getUser();
+    const user = auth.user;
+    if (!user) {
+      alert('Please sign in.');
       setCreating(false);
+      return;
     }
+
+    // ----- PARSE TIME (nullable until we validate) -----
+    let start: Date | null = liveStart ?? null;
+    let end: Date | null = liveEnd ?? null;
+
+    if ((!start || !end) && !chronoMod) {
+      const cm = await import('chrono-node');
+      const res = cm.parse(raw, new Date(), { forwardDate: true });
+      if (res.length) {
+        const r = res[0];
+        start = r.start ? r.start.date() : null;
+        end = r.end ? r.end.date() : (start ? new Date(start.getTime() + 60 * 60 * 1000) : null);
+      }
+    }
+
+    if (!start || !end) {
+      alert('Please include a time (for example: “Park with kids, 3–5p today”).');
+      setCreating(false);
+      return;
+    }
+
+    // ----- INSERT -----
+    const title = previewTitle || 'Hang';
+    const host = hostName.trim() || (signedInAs ? emailHandle(signedInAs) : 'Me');
+
+    const { data, error } = await supabase
+      .from('open_invites')
+      .insert({
+        creator_id: user.id,
+        title,
+        window_start: start.toISOString(),
+        window_end: end.toISOString(),
+        host_name: host,
+        circle, // enum/text
+      })
+      .select('id')
+      .single();
+
+    if (error) {
+      console.error('Create failed:', error);
+      alert('Could not create invite.');
+      setCreating(false);
+      return;
+    }
+
+    const base = process.env.NEXT_PUBLIC_BASE_URL || 'https://nowish.vercel.app';
+    const url = `${base}/invite/${data.id}`;
+    setCreatedLink(url);
+
+    // Try Web Share
+    if (typeof navigator !== 'undefined' && hasShare(navigator)) {
+      try {
+        await navigator.share({
+          title,
+          text: `${title} — ${previewWhen}`,
+          url,
+        });
+      } catch {
+        /* user cancelled */
+      }
+    }
+  } finally {
+    setCreating(false);
   }
+}
 
   return (
     <div className="mx-auto max-w-screen-sm px-4 py-8">
