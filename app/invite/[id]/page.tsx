@@ -38,34 +38,29 @@ function formatWindow(startISO?: string | null, endISO?: string | null, tz = DEF
 
 export async function generateMetadata({ params }: { params: { id: string } }) {
   const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://nowish.vercel.app';
-  const { data: invite } = await supabaseServer
-    .from('open_invites')
-    .select('id, title, window_start, window_end')
-    .eq('id', params.id)
-    .maybeSingle();
-
-  const title = invite?.title ? `Nowish: ${invite.title}` : 'Nowish Invite';
-  const when = formatWindow(invite?.window_start, invite?.window_end) || 'Tap to RSVP';
-  const image = `${base}/api/og/${params.id}.png?v=1`; // <- real .png
+  // ...fetch invite, build title/when like before...
+  const img1 = `${base}/api/og/${params.id}.png?v=4`;        // dynamic, rich card
+  const img2 = `${base}/og-fallback.png?v=1`;                 // instant static fallback
 
   return {
     title,
     description: when,
     openGraph: {
-      title,
-      description: when,
-      url: `${base}/invite/${params.id}`,
-      siteName: 'Nowish',
-      images: [{ url: image, width: 1200, height: 630, alt: 'Nowish Invite' }],
+      title, description: when, url: `${base}/invite/${params.id}`, siteName: 'Nowish',
+      images: [
+        { url: img1, width: 1200, height: 630, alt: 'Nowish Invite' },
+        { url: img2, width: 1200, height: 630, alt: 'Nowish Invite (fallback)' },
+      ],
     },
     twitter: {
-      card: 'summary_large_image',
-      title,
-      description: when,
-      images: [image],
+      card: 'summary_large_image', title, description: when, images: [img1, img2],
     },
-    alternates: { canonical: `${base}/invite/${params.id}` },
-    robots: { index: true, follow: true },
+    other: {
+      'og:image:width': '1200',
+      'og:image:height': '630',
+      'og:image:type': 'image/png',
+      'og:image:secure_url': img1,
+    },
   };
 }
 

@@ -12,7 +12,7 @@ const supabase = createClient(
   { global: { fetch } }
 );
 
-const DEFAULT_TZ = process.env.NEXT_PUBLIC_DEFAULT_TZ || 'America/Chicago';
+const DEFAULT_TZ = process.env.NEXT_PUBLIC_DEFAULT_TZ || 'America/Los_Angeles';
 
 // --- Helpers ---
 function fmtWhen(startISO?: string | null, endISO?: string | null, tz = DEFAULT_TZ) {
@@ -40,7 +40,7 @@ function fmtWhen(startISO?: string | null, endISO?: string | null, tz = DEFAULT_
                    }).format(end)} ${t.format(end)}`;
 }
 
-// --- Route handler (Next 15 signature: params is a Promise) ---
+// --- GET handler ---
 export async function GET(_req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const { id } = await context.params;
 
@@ -53,7 +53,6 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ id: st
   const title = invite?.title || 'Nowish Invite';
   const when = fmtWhen(invite?.window_start, invite?.window_end);
 
-  // --- Styles: brand small, title big, when medium, single CTA strip at bottom ---
   return new ImageResponse(
     (
       <div
@@ -69,9 +68,9 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ id: st
             'ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial',
         }}
       >
-        {/* Padding frame */}
+        {/* Top Section */}
         <div style={{ padding: '56px 56px 0 56px' }}>
-          {/* Brand (small) */}
+          {/* Brand */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, opacity: 0.92 }}>
             <div
               style={{
@@ -89,27 +88,27 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ id: st
             >
               N
             </div>
-            <div style={{ fontSize: 34, fontWeight: 800, letterSpacing: 0.3 }}>Nowish</div>
+            <div style={{ fontSize: 34, fontWeight: 800 }}>Nowish</div>
           </div>
 
-          {/* Main content */}
-          <div style={{ marginTop: 28, maxWidth: 1000 }}>
+          {/* Title + Time */}
+          <div style={{ marginTop: 32 }}>
             <div
               style={{
-                fontSize: 86,
-                lineHeight: 1.04,
+                fontSize: 88,
                 fontWeight: 900,
+                lineHeight: 1.05,
+                marginBottom: 16,
                 wordBreak: 'break-word',
-                marginBottom: 18,
               }}
             >
               {title}
             </div>
-            <div style={{ fontSize: 40, opacity: 0.85 }}>{when}</div>
+            <div style={{ fontSize: 42, opacity: 0.85 }}>{when}</div>
           </div>
         </div>
 
-        {/* CTA strip (single, not duplicated) */}
+        {/* CTA */}
         <div
           style={{
             width: '100%',
@@ -137,4 +136,16 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ id: st
       },
     }
   );
+}
+
+// --- HEAD handler (for iMessage preview compatibility) ---
+export async function HEAD(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const res = await GET(req, context);
+  return new Response(null, {
+    status: 200,
+    headers: {
+      'Content-Type': 'image/png',
+      'Cache-Control': res.headers.get('Cache-Control') ?? 'public, max-age=600, s-maxage=600',
+    },
+  });
 }
