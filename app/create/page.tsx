@@ -1,324 +1,301 @@
+// app/create/page.tsx
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { useRouter } from 'next/navigation';
+import { createClient, Session, User } from '@supabase/supabase-js';
+import * as chrono from 'chrono-node';
 
 type Circle = 'Family' | 'Close Friends' | 'Coworkers';
 
-// Web Share API type guard (no `any`)
-type ShareCapableNavigator = Navigator & {
-  share?: (data: ShareData) => Promise<void>;
-  canShare?: (data?: ShareData) => boolean;
+type Parsed = {
+  title: string;
+  start: Date | null;
+  end: Date | null;
+  whenText: string | null;
 };
-function hasShare(n: Navigator): n is ShareCapableNavigator {
-  return typeof (n as ShareCapableNavigator).share === 'function';
-}
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-// ---------- small helpers ----------
-function emailHandle(email: string) {
-  const i = email.indexOf('@');
-  return i > 0 ? email.slice(0, i) : email;
-}
-
-function titleFromRaw(raw: string) {
-  const cleaned = raw
-    .replace(/\b(today|tomorrow|tonight)\b/gi, '')
-    .replace(/\bfrom\b.*$/i, '')
-    .replace(/\b\d{1,2}(:\d{2})?\s?(-|to|–|—)\s?\d{1,2}(:\d{2})?\s?(am|pm|a|p)?/i, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-  return cleaned.length ? cleaned : raw.trim();
-}
-
-function fmtRange(start: Date, end: Date) {
-  const sameDay =
-    start.getFullYear() === end.getFullYear() &&
-    start.getMonth() === end.getMonth() &&
-    start.getDate() === end.getDate();
-
-  const day = new Intl.DateTimeFormat('en-US', {
+function formatPreview(p: Parsed): string {
+  if (!p.title) return 'add a title';
+  if (!p.start) return p.title;
+  const opts: Intl.DateTimeFormatOptions = {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
-  }).format(start);
-
-  const t = new Intl.DateTimeFormat('en-US', {
     hour: 'numeric',
     minute: '2-digit',
-  });
-
-  return sameDay ? `${day} • ${t.format(start)} — ${t.format(end)}` : `${t.format(start)} — ${t.format(end)}`;
+  };
+  const start = new Intl.DateTimeFormat(undefined, opts).format(p.start);
+  if (!p.end) return `${p.title} — ${start}`;
+  const end = new Intl.DateTimeFormat(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(p.end);
+  return `${p.title} — ${start} to ${end}`;
 }
 
-// ---------- component ----------
+function parseInput(input: string, refDate: Date): Parsed {
+  const results = chrono.parse(input, refDate);
+  let start: Date | null = null;
+  let end: Date | null = null;
+
+  if (results.length > 0) {
+    const r = results[0];
+    start = r.start?.date() ?? null;
+    // End may be missing; if so, default to +60min from start
+    end = r.end?.date() ?? (start ? new Date(start.getTime() + 60 * 60 * 1000) : null);
+  }
+
+  // Title is input with the time phrase removed (best effort)
+  const timeSpan =
+    results.length > 0 ? input.slice(results[0].index, results[0].index + results[0].text.length) : '';
+  const title = input.replace(timeSpan, '').trim().replace(/[–—-]\s*$/,'') || input.trim();
+
+  return {
+    title,
+    start,
+    end,
+    whenText: results.length > 0 ? results[0].text : null,
+  };
+}
+
 export default function CreateInvitePage() {
-  const [raw, setRaw] = useState('');
+  const router = useRouter();
+
+  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+
+  const [input, setInput] = useState('');
   const [circle, setCircle] = useState<Circle>('Family');
   const [hostName, setHostName] = useState('');
-  const [signedInAs, setSignedInAs] = useState<string | null>(null);
-
-  // chrono loaded on the client only
-  const [chronoMod, setChronoMod] = useState<typeof import('chrono-node') | null>(null);
-
-  // live-parse state
-  const [liveStart, setLiveStart] = useState<Date | null>(null);
-  const [liveEnd, setLiveEnd] = useState<Date | null>(null);
-
-  // saving state
   const [creating, setCreating] = useState(false);
-  const [createdLink, setCreatedLink] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [link, setLink] = useState<string | null>(null);
 
-  // fetch current user for defaults
+  // auth
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      const email = data.user?.email ?? null;
-      setSignedInAs(email);
-      if (email && !hostName) setHostName(emailHandle(email));
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session ?? null);
+      setUser(data.session?.user ?? null);
+      if (data.session?.user?.email) {
+        const handle = data.session.user.email.split('@')[0] ?? '';
+        setHostName((prev) => prev || handle);
+      }
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, sess) => {
+      setSession(sess ?? null);
+      setUser(sess?.user ?? null);
+    });
+    return () => sub.subscription.unsubscribe();
   }, []);
 
-  // load chrono once (client)
-  useEffect(() => {
-    let mounted = true;
-    import('chrono-node')
-      .then((m) => mounted && setChronoMod(m))
-      .catch(() => {});
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  const parsed = useMemo(() => parseInput(input, new Date()), [input]);
+  const preview = useMemo(() => formatPreview(parsed), [parsed]);
 
-  // live parsing (debounced)
-  useEffect(() => {
-    if (!chronoMod) return;
-    if (!raw.trim()) {
-      setLiveStart(null);
-      setLiveEnd(null);
+  const canCreate =
+    !!user &&
+    !!parsed.title &&
+    !!parsed.start &&
+    !!parsed.end &&
+    !!hostName &&
+    !creating;
+
+  async function handleCreate() {
+    setErrorMsg(null);
+
+    if (!user) {
+      setErrorMsg('You need to be signed in.');
       return;
     }
-    const id = setTimeout(() => {
-      const results = chronoMod.parse(raw, new Date(), { forwardDate: true });
-      if (!results.length) {
-        setLiveStart(null);
-        setLiveEnd(null);
+    if (!parsed.start || !parsed.end) {
+      setErrorMsg('Please include a time (e.g., “3–5p today”).');
+      return;
+    }
+
+    setCreating(true);
+    try {
+      // open_invites column names assumed from earlier schema you shared
+      const { data, error } = await supabase
+        .from('open_invites')
+        .insert([
+          {
+            creator_id: user.id,
+            title: parsed.title,
+            start_time: parsed.start.toISOString(),
+            end_time: parsed.end.toISOString(),
+            host_name: hostName || user.email?.split('@')[0],
+            circle: circle,                 // keep for compatibility if you still have this column
+            circle_ids: [],                 // safe default for not-null schemas
+          },
+        ])
+        .select('id')
+        .single();
+
+      if (error) {
+        setErrorMsg(`Create failed: ${error.message}`);
+        setCreating(false);
         return;
       }
-      const r = results[0];
-      const s = r.start?.date() ?? null;
-      const e = r.end?.date() ?? (s ? new Date(s.getTime() + 60 * 60 * 1000) : null);
-      setLiveStart(s ?? null);
-      setLiveEnd(e ?? null);
-    }, 160);
-    return () => clearTimeout(id);
-  }, [raw, chronoMod]);
+      const id: string = data.id;
+      const url = `${process.env.NEXT_PUBLIC_BASE_URL ?? 'https://nowish.vercel.app'}/invite/${id}`;
+      setLink(url);
 
-  const previewTitle = useMemo(() => (raw.trim() ? titleFromRaw(raw) : ''), [raw]);
-
-  const previewWhen = useMemo(() => {
-    if (liveStart && liveEnd) return fmtRange(liveStart, liveEnd);
-    return 'add a time so we can parse it';
-  }, [liveStart, liveEnd]);
-
-  const canSubmit = !!raw.trim() && !!liveStart && !!liveEnd;
-
-async function handleCreate() {
-  if (!canSubmit) return;
-
-  try {
-    setCreating(true);
-    setCreatedLink(null);
-
-    // Ensure user is signed in
-    const { data: auth } = await supabase.auth.getUser();
-    const user = auth.user;
-    if (!user) {
-      alert('Please sign in.');
-      setCreating(false);
-      return;
-    }
-
-    // ----- PARSE TIME (nullable until we validate) -----
-    let start: Date | null = liveStart ?? null;
-    let end: Date | null = liveEnd ?? null;
-
-    if ((!start || !end) && !chronoMod) {
-      const cm = await import('chrono-node');
-      const res = cm.parse(raw, new Date(), { forwardDate: true });
-      if (res.length) {
-        const r = res[0];
-        start = r.start ? r.start.date() : null;
-        end = r.end ? r.end.date() : (start ? new Date(start.getTime() + 60 * 60 * 1000) : null);
+      // try to share right away
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: parsed.title,
+            text: `Join me: ${preview}`,
+            url,
+          });
+        } catch {
+          // user may cancel share; ignore
+        }
       }
-    }
-
-    if (!start || !end) {
-      alert('Please include a time (for example: “Park with kids, 3–5p today”).');
+    } catch (e) {
+      setErrorMsg('Unexpected error creating invite.');
+    } finally {
       setCreating(false);
-      return;
     }
-
-    // ----- INSERT -----
-    const title = previewTitle || 'Hang';
-    const host = hostName.trim() || (signedInAs ? emailHandle(signedInAs) : 'Me');
-
-    const { data, error } = await supabase
-      .from('open_invites')
-      .insert({
-        creator_id: user.id,
-        title,
-        window_start: start.toISOString(),
-        window_end: end.toISOString(),
-        host_name: host,
-        circle, // enum/text
-      })
-      .select('id')
-      .single();
-
-    if (error) {
-      console.error('Create failed:', error);
-      alert('Could not create invite.');
-      setCreating(false);
-      return;
-    }
-
-    const base = process.env.NEXT_PUBLIC_BASE_URL || 'https://nowish.vercel.app';
-    const url = `${base}/invite/${data.id}`;
-    setCreatedLink(url);
-
-    // Try Web Share
-    if (typeof navigator !== 'undefined' && hasShare(navigator)) {
-      try {
-        await navigator.share({
-          title,
-          text: `${title} — ${previewWhen}`,
-          url,
-        });
-      } catch {
-        /* user cancelled */
-      }
-    }
-  } finally {
-    setCreating(false);
   }
-}
+
+  function copyLink() {
+    if (link) {
+      navigator.clipboard.writeText(link).catch(() => {});
+    }
+  }
+
+  function shareLink() {
+    if (!link) return;
+    if (navigator.share) {
+      navigator
+        .share({ title: parsed.title || 'Invite', text: preview, url: link })
+        .catch(() => {});
+    } else {
+      copyLink();
+    }
+  }
 
   return (
-    <div className="mx-auto max-w-screen-sm px-4 py-8">
-      {signedInAs && (
-        <div className="mb-6 rounded-xl border border-slate-200/60 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-          You’re signed in as <span className="font-semibold">{signedInAs}</span>
-        </div>
-      )}
+    <div className="space-y-6">
+      {/* signed in banner */}
+      <div className="rounded-xl border border-slate-200 bg-white/70 px-4 py-2 text-sm text-slate-700 shadow-sm">
+        You’re signed in as <span className="font-medium">{user?.email ?? '—'}</span>
+      </div>
 
-      <h1 className="mb-2 text-4xl font-semibold tracking-tight text-slate-900">
-        Create an invite
-      </h1>
-      <p className="mb-6 text-slate-600">
-        Write it how you’d text it. We’ll parse the time.
-      </p>
+      <h1 className="text-4xl font-extrabold tracking-tight text-slate-900">Create an invite</h1>
+      <p className="text-slate-600">Write it how you’d text it. We’ll parse the time.</p>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-        <label className="mb-2 block text-base font-semibold text-slate-900">
+      <div className="rounded-2xl border border-slate-200 bg-white/80 p-5 shadow-lg">
+        {/* What are you doing */}
+        <label className="block text-lg font-semibold text-slate-800">
           What are you doing?
         </label>
         <input
-          className="mb-3 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
-          placeholder={`e.g. "Park with kids, 3–5p today"`}
-          value={raw}
-          onChange={(e) => setRaw(e.target.value)}
+          className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none ring-0 placeholder:text-slate-400 focus:border-sky-500"
+          placeholder='e.g. "Park with kids, 3–5p today"'
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          autoFocus
         />
 
-        <div className="mb-6 text-sm text-slate-500">
-          <span className="font-medium text-slate-600">Preview:</span>{' '}
-          {previewTitle ? `${previewTitle} — ` : null}
-          {previewWhen}
+        {/* Preview */}
+        <div className="mt-2 text-sm text-slate-500">
+          <span className="font-medium">Preview:</span>{' '}
+          {parsed.start ? (
+            <span className="text-slate-700">{preview}</span>
+          ) : (
+            <span>add a time so we can parse it</span>
+          )}
         </div>
 
-        <label className="mb-2 block text-base font-semibold text-slate-900">
-          Who’s this for?
-        </label>
-        <select
-          className="mb-6 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
-          value={circle}
-          onChange={(e) => setCircle(e.target.value as Circle)}
-        >
-          <option>Family</option>
-          <option>Close Friends</option>
-          <option>Coworkers</option>
-        </select>
+        {/* Circle & Host */}
+        <div className="mt-6 grid gap-5 md:grid-cols-2">
+          <div>
+            <label className="block text-lg font-semibold text-slate-800">Who’s this for?</label>
+            <select
+              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:border-sky-500"
+              value={circle}
+              onChange={(e) => setCircle(e.target.value as Circle)}
+            >
+              <option>Family</option>
+              <option>Close Friends</option>
+              <option>Coworkers</option>
+            </select>
+          </div>
 
-        <label className="mb-2 block text-base font-semibold text-slate-900">
-          Your name (shows on invite)
-        </label>
-        <input
-          className="mb-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
-          placeholder="e.g. Raju"
-          value={hostName}
-          onChange={(e) => setHostName(e.target.value)}
-        />
-        <p className="mb-6 text-sm text-slate-500">
-          Optional — defaults to your email handle.
-        </p>
+          <div>
+            <label className="block text-lg font-semibold text-slate-800">
+              Your name (shows on invite)
+            </label>
+            <input
+              className="mt-2 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:border-sky-500"
+              value={hostName}
+              onChange={(e) => setHostName(e.target.value)}
+            />
+            <p className="mt-1 text-xs text-slate-500">
+              Optional — defaults to your email handle.
+            </p>
+          </div>
+        </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        {/* Actions */}
+        <div className="mt-6 flex flex-wrap items-center gap-3">
           <button
             onClick={handleCreate}
-            disabled={!canSubmit || creating}
-            className={`inline-flex items-center justify-center rounded-xl px-5 py-3 text-base font-semibold text-white shadow-sm transition ${
-              !canSubmit || creating
-                ? 'bg-slate-300'
-                : 'bg-indigo-600 hover:bg-indigo-700'
+            disabled={!canCreate}
+            className={`rounded-xl px-5 py-3 text-white shadow disabled:cursor-not-allowed ${
+              canCreate
+                ? 'bg-sky-600 hover:bg-sky-700'
+                : 'bg-slate-300'
             }`}
           >
             {creating ? 'Creating…' : 'Create Invite'}
           </button>
 
-          <div className="flex-1">
-            {createdLink ? (
-              <div className="mt-2 flex items-center gap-2 sm:mt-0 sm:justify-end">
-                <input
-                  readOnly
-                  value={createdLink}
-                  className="w-full max-w-[28rem] rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-700"
-                />
-                <button
-                  onClick={() => navigator.clipboard?.writeText(createdLink)}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                >
-                  Copy
-                </button>
-                {typeof navigator !== 'undefined' && hasShare(navigator) ? (
-                  <button
-                    onClick={() =>
-                      navigator.share!({
-                        title: previewTitle || 'Invite',
-                        text: `${previewTitle || 'Invite'} — ${previewWhen}`,
-                        url: createdLink,
-                      })
-                    }
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                  >
-                    Share
-                  </button>
-                ) : null}
-              </div>
-            ) : (
-              <p className="mt-2 text-sm text-slate-500 sm:mt-0 sm:text-right">
-                Link will appear here after you create.
-              </p>
-            )}
-          </div>
+          {link ? (
+            <>
+              <span className="text-sm text-slate-600">Link ready:</span>
+              <input
+                readOnly
+                value={link}
+                className="min-w-[260px] flex-1 rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-slate-700"
+                onFocus={(e) => e.currentTarget.select()}
+              />
+              <button
+                onClick={copyLink}
+                className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm text-slate-800 hover:bg-slate-50"
+              >
+                Copy
+              </button>
+              <button
+                onClick={shareLink}
+                className="rounded-xl border border-sky-300 bg-white px-4 py-2 text-sm text-sky-700 hover:bg-sky-50"
+              >
+                Share…
+              </button>
+            </>
+          ) : (
+            <p className="text-sm text-slate-500">Link will appear here after you create.</p>
+          )}
         </div>
+
+        {/* Error */}
+        {errorMsg && (
+          <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {errorMsg}
+          </div>
+        )}
       </div>
 
-      <p className="mt-6 text-sm text-slate-500">
-        Tip: try “Park with kids, 3–5p today” or “Dinner, 7:30pm tomorrow”.
+      <p className="text-sm text-slate-500">
+        Tip: try <span className="font-medium">“Park with kids, 3–5p today”</span> or{' '}
+        <span className="font-medium">“Dinner, 7:30pm tomorrow”</span>.
       </p>
     </div>
   );
