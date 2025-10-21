@@ -74,7 +74,7 @@ export default async function Image({
       data ? formatWhen(data.window_start, data.window_end) : 'Happening soon';
     const host = data?.host_name ?? null;
 
-  // Ultra-simple image that iMessage can definitely load
+  // Rich preview with branding and call to action
   return new ImageResponse(
     (
       <div
@@ -83,21 +83,43 @@ export default async function Image({
           height: size.height,
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          background: '#1a1a1a',
+          justifyContent: 'space-between',
+          padding: 40,
+          background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',
           color: 'white',
           fontFamily: 'Arial, sans-serif',
         }}
       >
-        <div style={{ fontSize: 60, fontWeight: 'bold', marginBottom: 20 }}>
-          {title}
+        {/* Header with Nowish branding */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontSize: 24, fontWeight: 'bold', color: '#ffffff' }}>
+            Nowish
+          </div>
         </div>
-        <div style={{ fontSize: 30, opacity: 0.8 }}>
-          {when}
+
+        {/* Main content */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+          <div style={{ fontSize: 64, fontWeight: 'bold', marginBottom: 16, lineHeight: 1.1 }}>
+            {title}
+          </div>
+          <div style={{ fontSize: 32, opacity: 0.9, marginBottom: 8 }}>
+            {when}
+          </div>
+          {host && (
+            <div style={{ fontSize: 24, opacity: 0.8 }}>
+              from {host}
+            </div>
+          )}
         </div>
-        <div style={{ fontSize: 24, marginTop: 20, opacity: 0.6 }}>
-          Tap to RSVP
+
+        {/* Footer with call to action */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontSize: 28, fontWeight: 'bold', color: '#ffffff' }}>
+            Tap to RSVP →
+          </div>
+          <div style={{ fontSize: 20, opacity: 0.7 }}>
+            nowish.vercel.app
+          </div>
         </div>
       </div>
     ),
