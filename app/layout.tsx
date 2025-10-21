@@ -31,8 +31,11 @@ export const metadata = {
     icon: '/icon.png',
     apple: '/apple-icon.png',
   },
+};
+export const viewport = {
   themeColor: '#0f1115',
-  viewport: 'width=device-width, initial-scale=1',
+  width: 'device-width',
+  initialScale: 1,
 };
 
 export default function RootLayout({

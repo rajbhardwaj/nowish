@@ -6,27 +6,41 @@ export const contentType = 'image/png';
 export default function AppleIcon() {
   return new ImageResponse(
     (
-      <svg xmlns="http://www.w3.org/2000/svg" width="180" height="180">
-        <defs>
-          <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#6ee7b7" />
-            <stop offset="1" stopColor="#3b82f6" />
-          </linearGradient>
-        </defs>
-        <rect width="180" height="180" rx="36" fill="#0f1115" />
-        <rect x="22" y="22" width="136" height="136" rx="28" fill="url(#g)" />
-        <text
-          x="50%"
-          y="59%"
-          textAnchor="middle"
-          fontFamily="system-ui, -apple-system, Segoe UI, Roboto"
-          fontWeight="900"
-          fontSize="86"
-          fill="#0b1020"
+      <div
+        style={{
+          width: '100%',
+          height: '100%',
+          background: '#0f1115',
+          display: 'grid',
+          placeItems: 'center',
+          borderRadius: 36,
+          fontFamily:
+            'ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial',
+        }}
+      >
+        <div
+          style={{
+            width: 136,
+            height: 136,
+            borderRadius: 28,
+            background: 'linear-gradient(225deg,#6ee7b7 0%,#3b82f6 100%)',
+            display: 'grid',
+            placeItems: 'center',
+          }}
         >
-          N
-        </text>
-      </svg>
+          <div
+            style={{
+              fontWeight: 900,
+              fontSize: 86,
+              lineHeight: 1,
+              color: '#0b1020',
+              transform: 'translateY(-2px)',
+            }}
+          >
+            N
+          </div>
+        </div>
+      </div>
     ),
     size
   );
