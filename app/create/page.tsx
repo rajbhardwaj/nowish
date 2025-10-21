@@ -113,19 +113,17 @@ export default function CreateInvitePage() {
 
     setCreating(true);
     try {
-      const insertData = {
-        creator_id: user.id,
-        title: parsed.title,
-        window_start: parsed.start.toISOString(),
-        window_end: parsed.end.toISOString(),
-        host_name: hostName || user.email?.split('@')[0],
-      };
-      
-      console.log('Inserting data:', insertData);
-      
       const { data, error } = await supabase
         .from('open_invites')
-        .insert([insertData])
+        .insert([
+          {
+            creator_id: user.id,
+            title: parsed.title,
+            window_start: parsed.start.toISOString(),
+            window_end: parsed.end.toISOString(),
+            host_name: hostName || user.email?.split('@')[0],
+          },
+        ])
         .select('id')
         .single();
 

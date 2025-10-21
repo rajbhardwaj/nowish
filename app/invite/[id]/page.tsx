@@ -43,18 +43,19 @@ function formatWhen(startISO?: string | null, endISO?: string | null, tz = DEFAU
 }
 
 // ---- Metadata for OG images ----
-export async function generateMetadata({ params }: { params: { id: string } }) {
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://nowish.vercel.app';
 
   const { data: invite } = await supabaseServer
     .from('open_invites')
     .select('id, title, window_start, window_end')
-    .eq('id', params.id)
+    .eq('id', id)
     .maybeSingle();
 
   const title = invite?.title ? `Nowish: ${invite.title}` : 'Nowish Invite';
   const when = formatWhen(invite?.window_start, invite?.window_end);
-  const ogUrl = `/invite/${params.id}/opengraph-image`;
+  const ogUrl = `/invite/${id}/opengraph-image`;
 
   return {
     title,
@@ -62,7 +63,7 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
     openGraph: {
       title,
       description: when,
-      url: `${base}/invite/${params.id}`,
+      url: `${base}/invite/${id}`,
       siteName: 'Nowish',
       images: [{ url: ogUrl, width: 1200, height: 630, alt: 'Nowish Invite' }],
     },
@@ -72,7 +73,7 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
       description: when,
       images: [ogUrl],
     },
-    alternates: { canonical: `${base}/invite/${params.id}` },
+    alternates: { canonical: `${base}/invite/${id}` },
     other: {
       'og:image:width': '1200',
       'og:image:height': '630',
@@ -83,16 +84,18 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
 }
 
 // ---- Page component (server) ----
-export default async function Page({ params }: { params: { id: string } }) {
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  
   // Optional: verify invite exists
   const { data: exists } = await supabaseServer
     .from('open_invites')
     .select('id')
-    .eq('id', params.id)
+    .eq('id', id)
     .maybeSingle();
 
   if (!exists) return notFound();
 
   // Render the interactive client component
-  return <InviteClient inviteId={params.id} />;
+  return <InviteClient inviteId={id} />;
 }
