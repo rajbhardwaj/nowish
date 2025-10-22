@@ -1,0 +1,91 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabaseClient';
+
+export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
+  console.log('Simple InviteClient loaded with ID:', inviteId);
+  alert('Simple component loaded!');
+  
+  const [invite, setInvite] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    console.log('Fetching invite for ID:', inviteId);
+    
+    const fetchInvite = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('open_invites')
+          .select('id, title, window_start, window_end, host_name')
+          .eq('id', inviteId)
+          .single();
+        
+        console.log('Fetch result:', { data, error });
+        
+        if (error) {
+          console.error('Error fetching invite:', error);
+          setLoading(false);
+          return;
+        }
+        
+        setInvite(data);
+        setLoading(false);
+      } catch (err) {
+        console.error('Exception fetching invite:', err);
+        setLoading(false);
+      }
+    };
+    
+    fetchInvite();
+  }, [inviteId]);
+
+  if (loading) {
+    return <div style={{ marginTop: 24, textAlign: 'center' }}>Loading...</div>;
+  }
+
+  if (!invite) {
+    return <div style={{ marginTop: 24, textAlign: 'center' }}>
+      <h1>Invite Not Found</h1>
+      <p>ID: {inviteId}</p>
+    </div>;
+  }
+
+  return (
+    <div style={{ marginTop: 24, textAlign: 'center' }}>
+      <div style={{ 
+        marginBottom: 32, 
+        padding: 24, 
+        background: '#f8f9fa', 
+        borderRadius: 12, 
+        border: '1px solid #e9ecef',
+        maxWidth: 500,
+        marginInline: 'auto'
+      }}>
+        <h1 style={{ margin: '0 0 8px', fontSize: 28, fontWeight: 700, color: '#212529' }}>
+          {invite.title}
+        </h1>
+        <p style={{ margin: '0 0 8px', fontSize: 18, color: '#495057' }}>
+          {new Date(invite.window_start).toLocaleString()} to {new Date(invite.window_end).toLocaleString()}
+        </p>
+        {invite.host_name && (
+          <p style={{ margin: 0, fontSize: 16, color: '#6c757d' }}>
+            from {invite.host_name}
+          </p>
+        )}
+      </div>
+      
+      <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+        <button style={{ background: '#111', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: 8, fontWeight: 600, minWidth: 110 }}>
+          I'm in
+        </button>
+        <button style={{ background: '#f4f4f4', border: '1px solid #ccc', padding: '10px 18px', borderRadius: 8, fontWeight: 600, minWidth: 110 }}>
+          Maybe
+        </button>
+        <button style={{ background: 'transparent', border: '1px solid #ccc', padding: '10px 18px', borderRadius: 8, color: '#777', fontWeight: 600, minWidth: 110 }}>
+          Can't make it
+        </button>
+      </div>
+    </div>
+  );
+}
