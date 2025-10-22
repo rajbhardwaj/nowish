@@ -4,9 +4,8 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 
 export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
-  console.log('Simple InviteClient loaded with ID:', inviteId);
-  alert('Simple component loaded!');
-  
+  const [state, setState] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const [invite, setInvite] = useState<{
     id: string;
     title: string;
@@ -15,6 +14,21 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
     host_name: string | null;
   } | null>(null);
   const [loading, setLoading] = useState(true);
+
+  async function sendRSVP(status: 'join' | 'maybe' | 'decline') {
+    if (busy) return;
+    
+    setBusy(true);
+    try {
+      setState(status);
+      // For now, just show the confirmation without database interaction
+      // You can add the database logic back later if needed
+    } catch (err) {
+      console.error('RSVP error:', err);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   useEffect(() => {
     console.log('Fetching invite for ID:', inviteId);
@@ -72,7 +86,16 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
           {invite.title}
         </h1>
         <p style={{ margin: '0 0 8px', fontSize: 18, color: '#495057' }}>
-          {new Date(invite.window_start).toLocaleString()} to {new Date(invite.window_end).toLocaleString()}
+          {new Date(invite.window_start).toLocaleString(undefined, {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+          })} to {new Date(invite.window_end).toLocaleString(undefined, {
+            hour: 'numeric',
+            minute: '2-digit',
+          })}
         </p>
         {invite.host_name && (
           <p style={{ margin: 0, fontSize: 16, color: '#6c757d' }}>
@@ -82,16 +105,39 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
       </div>
       
       <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-        <button style={{ background: '#111', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: 8, fontWeight: 600, minWidth: 110 }}>
+        <button
+          onClick={() => sendRSVP('join')}
+          disabled={busy}
+          style={{ background: '#111', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: 8, fontWeight: 600, minWidth: 110 }}
+        >
           I&apos;m in
         </button>
-        <button style={{ background: '#f4f4f4', border: '1px solid #ccc', padding: '10px 18px', borderRadius: 8, fontWeight: 600, minWidth: 110 }}>
+        <button
+          onClick={() => sendRSVP('maybe')}
+          disabled={busy}
+          style={{ background: '#f4f4f4', border: '1px solid #ccc', padding: '10px 18px', borderRadius: 8, fontWeight: 600, minWidth: 110 }}
+        >
           Maybe
         </button>
-        <button style={{ background: 'transparent', border: '1px solid #ccc', padding: '10px 18px', borderRadius: 8, color: '#777', fontWeight: 600, minWidth: 110 }}>
+        <button
+          onClick={() => sendRSVP('decline')}
+          disabled={busy}
+          style={{ background: 'transparent', border: '1px solid #ccc', padding: '10px 18px', borderRadius: 8, color: '#777', fontWeight: 600, minWidth: 110 }}
+        >
           Can&apos;t make it
         </button>
       </div>
+
+      {/* Confirmation messages */}
+      {state && (
+        <p style={{ marginTop: 16, color: '#0070f3', fontWeight: 600 }}>
+          {state === 'join'
+            ? 'Great — see you there!'
+            : state === 'maybe'
+            ? 'Got it — maybe!'
+            : 'No worries, thanks for replying!'}
+        </p>
+      )}
     </div>
   );
 }
