@@ -18,7 +18,15 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
   // Guest form state
   const [guestName, setGuestName] = useState('');
   const [guestEmail, setGuestEmail] = useState('');
-  const [showGuestForm, setShowGuestForm] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+
+  // Check if user is logged in
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsLoggedIn(!!user);
+    })();
+  }, []);
 
   async function sendRSVP(status: 'join' | 'maybe' | 'decline') {
     if (busy) return;
@@ -27,15 +35,13 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
     try {
       setState(status);
       
-      // Get current user email
+      // Get current user email (should be logged in at this point)
       const { data: { user } } = await supabase.auth.getUser();
       const userEmail = user?.email;
       
       if (!userEmail) {
-        // If not logged in, show guest form
-        setShowGuestForm(true);
-        setState(null); // Reset state since we need guest info first
-        setBusy(false);
+        alert('Please log in to RSVP.');
+        setState(null);
         return;
       }
       
@@ -192,8 +198,8 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
         )}
       </div>
 
-      {/* Guest form */}
-      {showGuestForm && (
+      {/* Guest form - show if not logged in */}
+      {isLoggedIn === false && (
         <div style={{ 
           marginBottom: 20, 
           padding: 16, 
@@ -227,23 +233,46 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
       
       <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
         <button
-          onClick={() => showGuestForm ? sendGuestRSVP('join') : sendRSVP('join')}
-          disabled={busy}
-          style={{ background: '#111', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: 8, fontWeight: 600, minWidth: 110 }}
+          onClick={() => isLoggedIn ? sendRSVP('join') : sendGuestRSVP('join')}
+          disabled={busy || (isLoggedIn === false && !guestEmail.trim())}
+          style={{ 
+            background: isLoggedIn === false && !guestEmail.trim() ? '#ccc' : '#111', 
+            color: '#fff', 
+            border: 'none', 
+            padding: '10px 18px', 
+            borderRadius: 8, 
+            fontWeight: 600, 
+            minWidth: 110 
+          }}
         >
           I&apos;m in
         </button>
         <button
-          onClick={() => showGuestForm ? sendGuestRSVP('maybe') : sendRSVP('maybe')}
-          disabled={busy}
-          style={{ background: '#f4f4f4', border: '1px solid #ccc', padding: '10px 18px', borderRadius: 8, fontWeight: 600, minWidth: 110 }}
+          onClick={() => isLoggedIn ? sendRSVP('maybe') : sendGuestRSVP('maybe')}
+          disabled={busy || (isLoggedIn === false && !guestEmail.trim())}
+          style={{ 
+            background: isLoggedIn === false && !guestEmail.trim() ? '#f0f0f0' : '#f4f4f4', 
+            border: '1px solid #ccc', 
+            padding: '10px 18px', 
+            borderRadius: 8, 
+            fontWeight: 600, 
+            minWidth: 110 
+          }}
         >
           Maybe
         </button>
         <button
-          onClick={() => showGuestForm ? sendGuestRSVP('decline') : sendRSVP('decline')}
-          disabled={busy}
-          style={{ background: 'transparent', border: '1px solid #ccc', padding: '10px 18px', borderRadius: 8, color: '#777', fontWeight: 600, minWidth: 110 }}
+          onClick={() => isLoggedIn ? sendRSVP('decline') : sendGuestRSVP('decline')}
+          disabled={busy || (isLoggedIn === false && !guestEmail.trim())}
+          style={{ 
+            background: 'transparent', 
+            border: '1px solid #ccc', 
+            padding: '10px 18px', 
+            borderRadius: 8, 
+            color: isLoggedIn === false && !guestEmail.trim() ? '#ccc' : '#777', 
+            fontWeight: 600, 
+            minWidth: 110 
+          }}
         >
           Can&apos;t make it
         </button>
