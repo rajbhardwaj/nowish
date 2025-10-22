@@ -3,9 +3,46 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 
+function formatTimeNicely(startISO: string, endISO: string): string {
+  const start = new Date(startISO);
+  const end = new Date(endISO);
+  const now = new Date();
+  
+  // Check if it's today
+  const isToday = start.toDateString() === now.toDateString();
+  const isTomorrow = start.toDateString() === new Date(now.getTime() + 24 * 60 * 60 * 1000).toDateString();
+  
+  const timeOptions: Intl.DateTimeFormatOptions = {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  };
+  
+  const startTime = start.toLocaleTimeString(undefined, timeOptions);
+  const endTime = end.toLocaleTimeString(undefined, timeOptions);
+  
+  if (isToday) {
+    return `Today at ${startTime} to ${endTime}`;
+  } else if (isTomorrow) {
+    return `Tomorrow at ${startTime} to ${endTime}`;
+  } else {
+    // For other days, show day and time
+    const dayOptions: Intl.DateTimeFormatOptions = {
+      weekday: 'short',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    };
+    const startFormatted = start.toLocaleString(undefined, dayOptions);
+    const endFormatted = end.toLocaleTimeString(undefined, timeOptions);
+    return `${startFormatted} to ${endFormatted}`;
+  }
+}
+
 export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
   const [state, setState] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const [invite, setInvite] = useState<{
     id: string;
     title: string;
@@ -14,6 +51,11 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
     host_name: string | null;
   } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [rsvpCounts, setRsvpCounts] = useState<{
+    join: number;
+    maybe: number;
+    decline: number;
+  }>({ join: 0, maybe: 0, decline: 0 });
   
   // Guest form state
   const [guestName, setGuestName] = useState('');
@@ -64,6 +106,8 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
         setState(null);
       } else {
         console.log('RSVP saved successfully:', data);
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 2000);
       }
     } catch (err) {
       console.error('RSVP error:', err);
@@ -113,7 +157,8 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
         setState(null);
       } else {
         console.log('Guest RSVP saved successfully:', data);
-        // Form will be hidden automatically since user is now "logged in" conceptually
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 2000);
       }
     } catch (err) {
       console.error('Guest RSVP error:', err);
@@ -129,6 +174,7 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
     
     const fetchInvite = async () => {
       try {
+        // Fetch invite details
         const { data, error } = await supabase
           .from('open_invites')
           .select('id, title, window_start, window_end, host_name')
@@ -144,6 +190,23 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
         }
         
         setInvite(data);
+
+        // Fetch RSVP counts
+        const { data: rsvpData, error: rsvpError } = await supabase
+          .from('rsvps')
+          .select('response')
+          .eq('invite_id', inviteId);
+
+        if (!rsvpError && rsvpData) {
+          const counts = rsvpData.reduce((acc, rsvp) => {
+            if (rsvp.response === 'join') acc.join++;
+            else if (rsvp.response === 'maybe') acc.maybe++;
+            else if (rsvp.response === 'decline') acc.decline++;
+            return acc;
+          }, { join: 0, maybe: 0, decline: 0 });
+          setRsvpCounts(counts);
+        }
+        
         setLoading(false);
       } catch (err) {
         console.error('Exception fetching invite:', err);
@@ -188,23 +251,39 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
         }}>
           {invite.title}
         </h1>
-        <p style={{ margin: '0 0 8px', fontSize: 18, color: '#495057' }}>
-          {new Date(invite.window_start).toLocaleString(undefined, {
-            weekday: 'short',
-            month: 'short',
-            day: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-          })} to {new Date(invite.window_end).toLocaleString(undefined, {
-            hour: 'numeric',
-            minute: '2-digit',
-          })}
+        <p style={{ margin: '0 0 8px', fontSize: 18, color: '#495057', fontWeight: 500 }}>
+          {formatTimeNicely(invite.window_start, invite.window_end)}
         </p>
         {invite.host_name && (
           <p style={{ margin: '0 0 12px', fontSize: 16, color: '#6c757d' }}>
             from {invite.host_name}
           </p>
         )}
+        
+        {/* RSVP Counts */}
+        {(rsvpCounts.join > 0 || rsvpCounts.maybe > 0 || rsvpCounts.decline > 0) && (
+          <div style={{ 
+            margin: '0 0 12px', 
+            padding: '8px 12px', 
+            background: 'rgba(255, 255, 255, 0.7)', 
+            borderRadius: 8,
+            fontSize: 14,
+            color: '#475569'
+          }}>
+            {rsvpCounts.join > 0 && (
+              <span style={{ color: '#059669', fontWeight: 600 }}>
+                {rsvpCounts.join} {rsvpCounts.join === 1 ? 'person is' : 'people are'} in
+              </span>
+            )}
+            {rsvpCounts.join > 0 && rsvpCounts.maybe > 0 && <span> • </span>}
+            {rsvpCounts.maybe > 0 && (
+              <span style={{ color: '#d97706', fontWeight: 600 }}>
+                {rsvpCounts.maybe} {rsvpCounts.maybe === 1 ? 'person is' : 'people are'} maybe
+              </span>
+            )}
+          </div>
+        )}
+        
         <p style={{ margin: 0, fontSize: 14, color: '#6c757d', fontStyle: 'italic' }}>
           Built for the moment — to see who&apos;s in.
         </p>
@@ -243,7 +322,13 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
         </div>
       )}
       
-      <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+      <div style={{ 
+        display: 'flex', 
+        gap: 16, 
+        justifyContent: 'center', 
+        flexWrap: 'wrap',
+        padding: '0 16px'
+      }}>
         <button
           onClick={() => isLoggedIn === true ? sendRSVP('join') : sendGuestRSVP('join')}
           disabled={busy || (isLoggedIn !== true && !guestEmail.trim())}
@@ -251,11 +336,15 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
             background: isLoggedIn !== true && !guestEmail.trim() ? '#ccc' : 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)', 
             color: '#fff', 
             border: 'none', 
-            padding: '10px 18px', 
-            borderRadius: 8, 
+            padding: '14px 24px', 
+            borderRadius: 12, 
             fontWeight: 600, 
-            minWidth: 110,
-            boxShadow: isLoggedIn !== true && !guestEmail.trim() ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.3)'
+            minWidth: 120,
+            minHeight: 48,
+            fontSize: 16,
+            boxShadow: isLoggedIn !== true && !guestEmail.trim() ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.3)',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease'
           }}
         >
           I&apos;m in
@@ -266,10 +355,14 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
           style={{ 
             background: isLoggedIn !== true && !guestEmail.trim() ? '#f0f0f0' : '#f4f4f4', 
             border: '1px solid #ccc', 
-            padding: '10px 18px', 
-            borderRadius: 8, 
+            padding: '14px 24px', 
+            borderRadius: 12, 
             fontWeight: 600, 
-            minWidth: 110 
+            minWidth: 120,
+            minHeight: 48,
+            fontSize: 16,
+            cursor: 'pointer',
+            transition: 'all 0.2s ease'
           }}
         >
           Maybe
@@ -280,16 +373,41 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
           style={{ 
             background: 'transparent', 
             border: '1px solid #ccc', 
-            padding: '10px 18px', 
-            borderRadius: 8, 
+            padding: '14px 24px', 
+            borderRadius: 12, 
             color: isLoggedIn !== true && !guestEmail.trim() ? '#ccc' : '#777', 
             fontWeight: 600, 
-            minWidth: 110 
+            minWidth: 120,
+            minHeight: 48,
+            fontSize: 16,
+            cursor: 'pointer',
+            transition: 'all 0.2s ease'
           }}
         >
           Can&apos;t make it
         </button>
       </div>
+
+      {/* Success Animation */}
+      {showSuccess && (
+        <div style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+          color: 'white',
+          padding: '20px 30px',
+          borderRadius: '16px',
+          fontSize: '18px',
+          fontWeight: '600',
+          boxShadow: '0 10px 25px rgba(16, 185, 129, 0.3)',
+          zIndex: 1000,
+          animation: 'successPulse 0.6s ease-out'
+        }}>
+          ✓ RSVP saved!
+        </div>
+      )}
 
       {/* Confirmation messages */}
       {state && (
