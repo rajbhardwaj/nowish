@@ -18,6 +18,7 @@ function formatWhen(startISO: string, endISO: string): string {
   const start = new Date(startISO);
   const end = new Date(endISO);
 
+  // Use the same timezone as the create flow (undefined = user's local timezone)
   const opts: Intl.DateTimeFormatOptions = {
     weekday: 'short',
     month: 'short',
