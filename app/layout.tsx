@@ -43,7 +43,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="h-full">
-      <body className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 text-slate-900 antialiased">
+      <body className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 text-slate-900 antialiased">
         <main className="mx-auto w-full max-w-2xl px-4 py-8">
           {children}
         </main>

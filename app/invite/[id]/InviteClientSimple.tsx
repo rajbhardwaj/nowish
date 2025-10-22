@@ -239,13 +239,14 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
           onClick={() => isLoggedIn === true ? sendRSVP('join') : sendGuestRSVP('join')}
           disabled={busy || (isLoggedIn !== true && !guestEmail.trim())}
           style={{ 
-            background: isLoggedIn !== true && !guestEmail.trim() ? '#ccc' : '#111', 
+            background: isLoggedIn !== true && !guestEmail.trim() ? '#ccc' : 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)', 
             color: '#fff', 
             border: 'none', 
             padding: '10px 18px', 
             borderRadius: 8, 
             fontWeight: 600, 
-            minWidth: 110 
+            minWidth: 110,
+            boxShadow: isLoggedIn !== true && !guestEmail.trim() ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.3)'
           }}
         >
           I&apos;m in

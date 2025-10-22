@@ -254,7 +254,7 @@ export default function CreateInvitePage() {
             disabled={!canCreate}
             className={`rounded-xl px-6 py-3 font-semibold text-white shadow-lg transition-all duration-200 disabled:cursor-not-allowed ${
               canCreate
-                ? 'bg-blue-600 hover:bg-blue-700 hover:shadow-xl active:scale-95'
+                ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 hover:shadow-xl active:scale-95'
                 : 'bg-slate-300'
             }`}
           >
@@ -280,7 +280,7 @@ export default function CreateInvitePage() {
                   </button>
                   <button
                     onClick={shareLink}
-                    className="rounded-xl border border-blue-300 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-700 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    className="rounded-xl border border-blue-300 bg-gradient-to-r from-blue-50 to-purple-50 px-4 py-3 text-sm font-medium text-blue-700 hover:from-blue-100 hover:to-purple-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
                   >
                     Share
                   </button>
