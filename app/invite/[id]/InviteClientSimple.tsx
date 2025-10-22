@@ -33,19 +33,24 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
       }
       
       // Save RSVP to database
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('rsvps')
         .upsert({
           invite_id: inviteId,
           state: status,
           guest_email: userEmail,
           guest_name: null,
-        }, { onConflict: 'invite_id,guest_email' });
+        }, { onConflict: 'invite_id,guest_email' })
+        .select();
+      
+      console.log('RSVP save result:', { data, error });
       
       if (error) {
         console.error('Failed to save RSVP:', error);
         alert(`Could not save RSVP: ${error.message}`);
         setState(null);
+      } else {
+        console.log('RSVP saved successfully:', data);
       }
     } catch (err) {
       console.error('RSVP error:', err);
