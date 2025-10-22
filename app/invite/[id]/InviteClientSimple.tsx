@@ -170,13 +170,20 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
       <div style={{ 
         marginBottom: 32, 
         padding: 24, 
-        background: '#f8f9fa', 
-        borderRadius: 12, 
-        border: '1px solid #e9ecef',
+        background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)', 
+        borderRadius: 16, 
+        border: '1px solid #cbd5e1',
         maxWidth: 500,
-        marginInline: 'auto'
+        marginInline: 'auto',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
       }}>
-        <h1 style={{ margin: '0 0 8px', fontSize: 28, fontWeight: 700, color: '#212529' }}>
+        <h1 style={{ 
+          margin: '0 0 12px', 
+          fontSize: 32, 
+          fontWeight: 800, 
+          color: '#1e293b',
+          textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+        }}>
           {invite.title}
         </h1>
         <p style={{ margin: '0 0 8px', fontSize: 18, color: '#495057' }}>
