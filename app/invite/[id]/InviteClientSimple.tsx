@@ -21,10 +21,36 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
     setBusy(true);
     try {
       setState(status);
-      // For now, just show the confirmation without database interaction
-      // You can add the database logic back later if needed
+      
+      // Get current user email
+      const { data: { user } } = await supabase.auth.getUser();
+      const userEmail = user?.email;
+      
+      if (!userEmail) {
+        // If not logged in, we need guest info - for now just show confirmation
+        console.log('User not logged in, RSVP not saved to database');
+        return;
+      }
+      
+      // Save RSVP to database
+      const { error } = await supabase
+        .from('rsvps')
+        .upsert({
+          invite_id: inviteId,
+          state: status,
+          guest_email: userEmail,
+          guest_name: null,
+        }, { onConflict: 'invite_id,guest_email' });
+      
+      if (error) {
+        console.error('Failed to save RSVP:', error);
+        alert(`Could not save RSVP: ${error.message}`);
+        setState(null);
+      }
     } catch (err) {
       console.error('RSVP error:', err);
+      alert(`Unexpected error: ${(err as Error).message}`);
+      setState(null);
     } finally {
       setBusy(false);
     }
