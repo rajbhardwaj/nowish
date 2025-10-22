@@ -255,7 +255,13 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
           {formatTimeNicely(invite.window_start, invite.window_end)}
         </p>
         {invite.host_name && (
-          <p style={{ margin: '0 0 12px', fontSize: 16, color: '#6c757d' }}>
+          <p style={{ 
+            margin: '0 0 12px', 
+            fontSize: 16, 
+            color: '#64748b',
+            fontWeight: 500,
+            fontFamily: 'system-ui, -apple-system, sans-serif'
+          }}>
             from {invite.host_name}
           </p>
         )}
@@ -284,7 +290,14 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
           </div>
         )}
         
-        <p style={{ margin: 0, fontSize: 14, color: '#6c757d', fontStyle: 'italic' }}>
+        <p style={{ 
+          margin: 0, 
+          fontSize: 14, 
+          color: '#64748b', 
+          fontStyle: 'italic',
+          fontWeight: 400,
+          fontFamily: 'system-ui, -apple-system, sans-serif'
+        }}>
           Built for the moment — to see who&apos;s in.
         </p>
       </div>
@@ -300,7 +313,13 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
           maxWidth: 400,
           marginInline: 'auto'
         }}>
-          <p style={{ margin: '0 0 12px', fontSize: 16, fontWeight: 600 }}>
+          <p style={{ 
+            margin: '0 0 12px', 
+            fontSize: 16, 
+            fontWeight: 600,
+            color: '#374151',
+            fontFamily: 'system-ui, -apple-system, sans-serif'
+          }}>
             Let the host know who you are:
           </p>
           <div style={{ display: 'grid', gap: 12 }}>
@@ -344,9 +363,22 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
             fontSize: 16,
             boxShadow: isLoggedIn !== true && !guestEmail.trim() ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.3)',
             cursor: 'pointer',
-            transition: 'all 0.2s ease'
+            transition: 'all 0.2s ease',
+            position: 'relative'
           }}
         >
+          {state === 'join' && (
+            <span style={{
+              position: 'absolute',
+              top: '8px',
+              right: '8px',
+              width: '8px',
+              height: '8px',
+              background: '#10b981',
+              borderRadius: '50%',
+              boxShadow: '0 0 0 2px rgba(16, 185, 129, 0.3)'
+            }} />
+          )}
           I&apos;m in
         </button>
         <button
@@ -362,9 +394,22 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
             minHeight: 48,
             fontSize: 16,
             cursor: 'pointer',
-            transition: 'all 0.2s ease'
+            transition: 'all 0.2s ease',
+            position: 'relative'
           }}
         >
+          {state === 'maybe' && (
+            <span style={{
+              position: 'absolute',
+              top: '8px',
+              right: '8px',
+              width: '8px',
+              height: '8px',
+              background: '#f59e0b',
+              borderRadius: '50%',
+              boxShadow: '0 0 0 2px rgba(245, 158, 11, 0.3)'
+            }} />
+          )}
           Maybe
         </button>
         <button
@@ -381,9 +426,22 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
             minHeight: 48,
             fontSize: 16,
             cursor: 'pointer',
-            transition: 'all 0.2s ease'
+            transition: 'all 0.2s ease',
+            position: 'relative'
           }}
         >
+          {state === 'decline' && (
+            <span style={{
+              position: 'absolute',
+              top: '8px',
+              right: '8px',
+              width: '8px',
+              height: '8px',
+              background: '#ef4444',
+              borderRadius: '50%',
+              boxShadow: '0 0 0 2px rgba(239, 68, 68, 0.3)'
+            }} />
+          )}
           Can&apos;t make it
         </button>
       </div>
