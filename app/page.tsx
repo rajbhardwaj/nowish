@@ -20,40 +20,111 @@ export default function HomePage() {
   }
 
   return (
-    <main style={{ maxWidth: 560, margin: '2rem auto', padding: 20 }}>
-      <h1 style={{ marginBottom: 8 }}>Nowish ⚡️</h1>
+    <main style={{ 
+      maxWidth: 600, 
+      margin: '4rem auto', 
+      padding: '2rem 1.5rem',
+      textAlign: 'center'
+    }}>
+      {/* Hero Section */}
+      <div style={{ marginBottom: '3rem' }}>
+        <h1 style={{ 
+          fontSize: '4rem',
+          fontWeight: '800',
+          margin: '0 0 1rem',
+          background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+          backgroundClip: 'text',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          letterSpacing: '-0.02em'
+        }}>
+          Nowish
+        </h1>
+        <div style={{ 
+          fontSize: '1.5rem',
+          marginBottom: '0.5rem',
+          color: '#6b7280'
+        }}>
+          ⚡️
+        </div>
+        <p style={{ 
+          fontSize: '1.25rem',
+          color: '#6b7280',
+          margin: '0 0 2rem',
+          fontWeight: '500'
+        }}>
+          Spontaneous hangs with your people
+        </p>
+      </div>
 
+      {/* User Status */}
       {email ? (
         <div
           style={{
-            background: '#f4f4f4',
-            padding: '8px 12px',
-            borderRadius: 6,
-            margin: '8px 0 16px',
-            textAlign: 'center',
-            fontSize: 14,
+            background: 'linear-gradient(135deg, #f0f4ff 0%, #f8fafc 100%)',
+            padding: '1rem 1.5rem',
+            borderRadius: '12px',
+            margin: '0 0 2rem',
+            border: '1px solid #e2e8f0',
+            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
           }}
         >
-          You are signed in as <strong>{email}</strong>
+          <p style={{ 
+            margin: 0, 
+            fontSize: '0.95rem',
+            color: '#475569',
+            fontWeight: '500'
+          }}>
+            Signed in as <strong style={{ color: '#1e293b' }}>{email}</strong>
+          </p>
         </div>
       ) : (
-        <p style={{ color: '#666', marginTop: 4 }}>
-          You’re not signed in. <a href="/login">Log in</a> to create or view invites.
-        </p>
+        <div style={{ 
+          background: '#fef3c7',
+          padding: '1rem 1.5rem',
+          borderRadius: '12px',
+          margin: '0 0 2rem',
+          border: '1px solid #fbbf24'
+        }}>
+          <p style={{ 
+            margin: 0, 
+            color: '#92400e',
+            fontSize: '0.95rem',
+            fontWeight: '500'
+          }}>
+            <a href="/login" style={{ 
+              color: '#92400e', 
+              textDecoration: 'underline',
+              fontWeight: '600'
+            }}>
+              Log in
+            </a> to create and manage invites
+          </p>
+        </div>
       )}
 
-      <div style={{ display: 'grid', gap: 12, marginTop: 12 }}>
+      {/* Action Buttons */}
+      <div style={{ 
+        display: 'grid', 
+        gap: '1rem', 
+        marginTop: '2rem',
+        maxWidth: '400px',
+        margin: '2rem auto 0'
+      }}>
         <a
           href="/create"
           style={{
             display: 'block',
             textAlign: 'center',
-            padding: '12px 16px',
-            background: '#111',
+            padding: '1rem 2rem',
+            background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
             color: '#fff',
-            borderRadius: 8,
+            borderRadius: '12px',
             textDecoration: 'none',
-            fontWeight: 600,
+            fontWeight: '600',
+            fontSize: '1.1rem',
+            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+            transition: 'all 0.2s ease'
           }}
         >
           Create an invite
@@ -64,12 +135,15 @@ export default function HomePage() {
           style={{
             display: 'block',
             textAlign: 'center',
-            padding: '12px 16px',
-            background: '#eee',
-            color: '#111',
-            borderRadius: 8,
+            padding: '1rem 2rem',
+            background: '#f8fafc',
+            color: '#374151',
+            borderRadius: '12px',
             textDecoration: 'none',
-            fontWeight: 600,
+            fontWeight: '600',
+            fontSize: '1.1rem',
+            border: '1px solid #e5e7eb',
+            transition: 'all 0.2s ease'
           }}
         >
           See my invites
@@ -81,11 +155,14 @@ export default function HomePage() {
             style={{
               display: 'block',
               textAlign: 'center',
-              padding: '12px 16px',
-              background: '#f8f8f8',
-              color: '#111',
-              borderRadius: 8,
+              padding: '1rem 2rem',
+              background: '#f3f4f6',
+              color: '#374151',
+              borderRadius: '12px',
               textDecoration: 'none',
+              fontWeight: '600',
+              fontSize: '1.1rem',
+              border: '1px solid #d1d5db'
             }}
           >
             Log in
