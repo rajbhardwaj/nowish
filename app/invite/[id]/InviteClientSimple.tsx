@@ -170,12 +170,12 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
       <div style={{ 
         marginBottom: 32, 
         padding: 24, 
-        background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)', 
+        background: 'linear-gradient(135deg, #f0f4ff 0%, #f8fafc 50%, #f1f5f9 100%)', 
         borderRadius: 16, 
-        border: '1px solid #cbd5e1',
+        border: '1px solid #c7d2fe',
         maxWidth: 500,
         marginInline: 'auto',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+        boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.1), 0 2px 4px -1px rgba(59, 130, 246, 0.05), 0 0 0 1px rgba(59, 130, 246, 0.05)'
       }}>
         <h1 style={{ 
           margin: '0 0 12px', 
