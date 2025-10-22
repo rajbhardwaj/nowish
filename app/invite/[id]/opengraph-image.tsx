@@ -93,6 +93,11 @@ export default async function Image({
           {when}
         </div>
         
+        {/* Tagline */}
+        <div style={{ fontSize: 18, opacity: 0.8, marginBottom: 16, textAlign: 'center', fontStyle: 'italic' }}>
+          Built for the moment — to see who&apos;s in.
+        </div>
+        
         {/* Call to action */}
         <div style={{ fontSize: 24, fontWeight: 'bold', color: '#ffffff' }}>
           Tap to RSVP →
