@@ -61,7 +61,7 @@ export default async function Image({
     const when =
       data ? formatWhen(data.window_start, data.window_end) : 'Happening soon';
 
-  // Simple but branded preview that works reliably
+  // Clean, readable preview with better contrast
   return new ImageResponse(
     (
       <div
@@ -72,34 +72,72 @@ export default async function Image({
           flexDirection: 'column',
           justifyContent: 'center',
           alignItems: 'center',
-          background: '#1a1a1a',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           color: 'white',
-          fontFamily: 'Arial, sans-serif',
-          padding: 40,
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+          padding: 60,
         }}
       >
         {/* Nowish branding */}
-        <div style={{ fontSize: 28, fontWeight: 'bold', marginBottom: 20, opacity: 0.9 }}>
+        <div style={{ 
+          fontSize: 32, 
+          fontWeight: 'bold', 
+          marginBottom: 30, 
+          color: '#ffffff',
+          textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+        }}>
           Nowish
         </div>
         
         {/* Event title */}
-        <div style={{ fontSize: 56, fontWeight: 'bold', marginBottom: 16, textAlign: 'center' }}>
+        <div style={{ 
+          fontSize: 64, 
+          fontWeight: 'bold', 
+          marginBottom: 24, 
+          textAlign: 'center',
+          color: '#ffffff',
+          textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+          lineHeight: 1.1
+        }}>
           {title}
         </div>
         
         {/* Time */}
-        <div style={{ fontSize: 28, opacity: 0.9, marginBottom: 20, textAlign: 'center' }}>
+        <div style={{ 
+          fontSize: 32, 
+          marginBottom: 24, 
+          textAlign: 'center',
+          color: '#ffffff',
+          textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+          fontWeight: '600'
+        }}>
           {when}
         </div>
         
         {/* Tagline */}
-        <div style={{ fontSize: 18, opacity: 0.8, marginBottom: 16, textAlign: 'center', fontStyle: 'italic' }}>
+        <div style={{ 
+          fontSize: 22, 
+          marginBottom: 32, 
+          textAlign: 'center', 
+          fontStyle: 'italic',
+          color: '#ffffff',
+          textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+          fontWeight: '500'
+        }}>
           Built for the moment — to see who&apos;s in.
         </div>
         
         {/* Call to action */}
-        <div style={{ fontSize: 24, fontWeight: 'bold', color: '#ffffff' }}>
+        <div style={{ 
+          fontSize: 28, 
+          fontWeight: 'bold', 
+          color: '#ffffff',
+          textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+          background: 'rgba(255,255,255,0.2)',
+          padding: '16px 32px',
+          borderRadius: '12px',
+          border: '2px solid rgba(255,255,255,0.3)'
+        }}>
           Tap to RSVP →
         </div>
       </div>
