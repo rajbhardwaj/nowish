@@ -57,7 +57,10 @@ function parseInput(input: string, refDate: Date): Parsed {
   // Title is input with the time phrase removed (best effort)
   const timeSpan =
     results.length > 0 ? input.slice(results[0].index, results[0].index + results[0].text.length) : '';
-  const title = input.replace(timeSpan, '').trim().replace(/[–—-]\s*$/,'') || input.trim();
+  let title = input.replace(timeSpan, '').trim().replace(/[–—-]\s*$/,'') || input.trim();
+  
+  // Clean up common punctuation that might be left behind
+  title = title.replace(/,\s*$/, '').replace(/\.\s*$/, '').trim();
 
   return {
     title,
