@@ -60,7 +60,6 @@ export default async function Image({
     const title = data?.title ?? 'Nowish Invite';
     const when =
       data ? formatWhen(data.window_start, data.window_end) : 'Happening soon';
-    const host = data?.host_name ?? null;
 
   // Simple but branded preview that works reliably
   return new ImageResponse(

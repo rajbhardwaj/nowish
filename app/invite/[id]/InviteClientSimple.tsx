@@ -7,7 +7,13 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
   console.log('Simple InviteClient loaded with ID:', inviteId);
   alert('Simple component loaded!');
   
-  const [invite, setInvite] = useState<any>(null);
+  const [invite, setInvite] = useState<{
+    id: string;
+    title: string;
+    window_start: string;
+    window_end: string;
+    host_name: string | null;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -77,13 +83,13 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
       
       <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
         <button style={{ background: '#111', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: 8, fontWeight: 600, minWidth: 110 }}>
-          I'm in
+          I&apos;m in
         </button>
         <button style={{ background: '#f4f4f4', border: '1px solid #ccc', padding: '10px 18px', borderRadius: 8, fontWeight: 600, minWidth: 110 }}>
           Maybe
         </button>
         <button style={{ background: 'transparent', border: '1px solid #ccc', padding: '10px 18px', borderRadius: 8, color: '#777', fontWeight: 600, minWidth: 110 }}>
-          Can't make it
+          Can&apos;t make it
         </button>
       </div>
     </div>
