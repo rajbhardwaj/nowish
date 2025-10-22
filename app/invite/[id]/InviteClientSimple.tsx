@@ -113,7 +113,7 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
         setState(null);
       } else {
         console.log('Guest RSVP saved successfully:', data);
-        setShowGuestForm(false); // Hide form after successful save
+        // Form will be hidden automatically since user is now "logged in" conceptually
       }
     } catch (err) {
       console.error('Guest RSVP error:', err);
