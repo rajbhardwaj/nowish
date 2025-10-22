@@ -192,10 +192,13 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
           })}
         </p>
         {invite.host_name && (
-          <p style={{ margin: 0, fontSize: 16, color: '#6c757d' }}>
+          <p style={{ margin: '0 0 12px', fontSize: 16, color: '#6c757d' }}>
             from {invite.host_name}
           </p>
         )}
+        <p style={{ margin: 0, fontSize: 14, color: '#6c757d', fontStyle: 'italic' }}>
+          Built for the moment — to see who&apos;s in.
+        </p>
       </div>
 
       {/* Guest form - show by default, hide only if confirmed logged in */}
