@@ -194,14 +194,14 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
         // Fetch RSVP counts
         const { data: rsvpData, error: rsvpError } = await supabase
           .from('rsvps')
-          .select('response')
+          .select('state')
           .eq('invite_id', inviteId);
 
         if (!rsvpError && rsvpData) {
           const counts = rsvpData.reduce((acc, rsvp) => {
-            if (rsvp.response === 'join') acc.join++;
-            else if (rsvp.response === 'maybe') acc.maybe++;
-            else if (rsvp.response === 'decline') acc.decline++;
+            if (rsvp.state === 'join') acc.join++;
+            else if (rsvp.state === 'maybe') acc.maybe++;
+            else if (rsvp.state === 'decline') acc.decline++;
             return acc;
           }, { join: 0, maybe: 0, decline: 0 });
           setRsvpCounts(counts);
