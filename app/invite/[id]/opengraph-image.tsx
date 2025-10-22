@@ -80,9 +80,9 @@ export default async function Image({
       >
         {/* Nowish branding */}
         <div style={{ 
-          fontSize: 32, 
+          fontSize: 48, 
           fontWeight: 'bold', 
-          marginBottom: 30, 
+          marginBottom: 40, 
           color: '#ffffff',
           textShadow: '0 2px 4px rgba(0,0,0,0.3)'
         }}>
@@ -91,21 +91,21 @@ export default async function Image({
         
         {/* Event title */}
         <div style={{ 
-          fontSize: 64, 
+          fontSize: 96, 
           fontWeight: 'bold', 
-          marginBottom: 24, 
+          marginBottom: 32, 
           textAlign: 'center',
           color: '#ffffff',
           textShadow: '0 2px 4px rgba(0,0,0,0.3)',
-          lineHeight: 1.1
+          lineHeight: 1.0
         }}>
           {title}
         </div>
         
         {/* Time */}
         <div style={{ 
-          fontSize: 32, 
-          marginBottom: 24, 
+          fontSize: 48, 
+          marginBottom: 32, 
           textAlign: 'center',
           color: '#ffffff',
           textShadow: '0 2px 4px rgba(0,0,0,0.3)',
@@ -116,8 +116,8 @@ export default async function Image({
         
         {/* Tagline */}
         <div style={{ 
-          fontSize: 22, 
-          marginBottom: 32, 
+          fontSize: 32, 
+          marginBottom: 40, 
           textAlign: 'center', 
           fontStyle: 'italic',
           color: '#ffffff',
@@ -129,13 +129,13 @@ export default async function Image({
         
         {/* Call to action */}
         <div style={{ 
-          fontSize: 28, 
+          fontSize: 36, 
           fontWeight: 'bold', 
           color: '#ffffff',
           textShadow: '0 2px 4px rgba(0,0,0,0.3)',
           background: 'rgba(255,255,255,0.2)',
-          padding: '16px 32px',
-          borderRadius: '12px',
+          padding: '20px 40px',
+          borderRadius: '16px',
           border: '2px solid rgba(255,255,255,0.3)'
         }}>
           Tap to RSVP →
