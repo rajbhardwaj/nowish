@@ -180,9 +180,11 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
         <h1 style={{ 
           margin: '0 0 12px', 
           fontSize: 32, 
-          fontWeight: 800, 
+          fontWeight: 700, 
           color: '#1e293b',
-          textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+          fontFamily: 'ui-serif, Georgia, "Times New Roman", serif',
+          textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+          letterSpacing: '-0.025em'
         }}>
           {invite.title}
         </h1>
