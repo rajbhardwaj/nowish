@@ -198,8 +198,8 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
         )}
       </div>
 
-      {/* Guest form - show if not logged in */}
-      {isLoggedIn === false && (
+      {/* Guest form - show by default, hide only if confirmed logged in */}
+      {isLoggedIn !== true && (
         <div style={{ 
           marginBottom: 20, 
           padding: 16, 
@@ -233,10 +233,10 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
       
       <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
         <button
-          onClick={() => isLoggedIn ? sendRSVP('join') : sendGuestRSVP('join')}
-          disabled={busy || (isLoggedIn === false && !guestEmail.trim())}
+          onClick={() => isLoggedIn === true ? sendRSVP('join') : sendGuestRSVP('join')}
+          disabled={busy || (isLoggedIn !== true && !guestEmail.trim())}
           style={{ 
-            background: isLoggedIn === false && !guestEmail.trim() ? '#ccc' : '#111', 
+            background: isLoggedIn !== true && !guestEmail.trim() ? '#ccc' : '#111', 
             color: '#fff', 
             border: 'none', 
             padding: '10px 18px', 
@@ -248,10 +248,10 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
           I&apos;m in
         </button>
         <button
-          onClick={() => isLoggedIn ? sendRSVP('maybe') : sendGuestRSVP('maybe')}
-          disabled={busy || (isLoggedIn === false && !guestEmail.trim())}
+          onClick={() => isLoggedIn === true ? sendRSVP('maybe') : sendGuestRSVP('maybe')}
+          disabled={busy || (isLoggedIn !== true && !guestEmail.trim())}
           style={{ 
-            background: isLoggedIn === false && !guestEmail.trim() ? '#f0f0f0' : '#f4f4f4', 
+            background: isLoggedIn !== true && !guestEmail.trim() ? '#f0f0f0' : '#f4f4f4', 
             border: '1px solid #ccc', 
             padding: '10px 18px', 
             borderRadius: 8, 
@@ -262,14 +262,14 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
           Maybe
         </button>
         <button
-          onClick={() => isLoggedIn ? sendRSVP('decline') : sendGuestRSVP('decline')}
-          disabled={busy || (isLoggedIn === false && !guestEmail.trim())}
+          onClick={() => isLoggedIn === true ? sendRSVP('decline') : sendGuestRSVP('decline')}
+          disabled={busy || (isLoggedIn !== true && !guestEmail.trim())}
           style={{ 
             background: 'transparent', 
             border: '1px solid #ccc', 
             padding: '10px 18px', 
             borderRadius: 8, 
-            color: isLoggedIn === false && !guestEmail.trim() ? '#ccc' : '#777', 
+            color: isLoggedIn !== true && !guestEmail.trim() ? '#ccc' : '#777', 
             fontWeight: 600, 
             minWidth: 110 
           }}

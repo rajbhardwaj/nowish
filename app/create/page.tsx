@@ -39,7 +39,10 @@ function formatPreview(p: Parsed): string {
 }
 
 function parseInput(input: string, refDate: Date): Parsed {
+  console.log('Parsing input:', input, 'with refDate:', refDate);
   const results = chrono.parse(input, refDate);
+  console.log('Chrono results:', results);
+  
   let start: Date | null = null;
   let end: Date | null = null;
 
@@ -48,6 +51,7 @@ function parseInput(input: string, refDate: Date): Parsed {
     start = r.start?.date() ?? null;
     // End may be missing; if so, default to +60min from start
     end = r.end?.date() ?? (start ? new Date(start.getTime() + 60 * 60 * 1000) : null);
+    console.log('Parsed dates:', { start, end });
   }
 
   // Title is input with the time phrase removed (best effort)
