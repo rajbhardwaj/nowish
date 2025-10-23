@@ -147,7 +147,7 @@ function formatPreview(p: Parsed): string {
   return `${p.title} — ${start} to ${end}`;
 }
 
-function detectEmoji(input: string, detectedCircle: Circle): string | null {
+function detectEmoji(input: string): string | null {
   const lowerInput = input.toLowerCase();
   
   // Check for work context
@@ -196,7 +196,7 @@ function detectCircle(input: string): Circle {
 
 function parseInput(input: string, refDate: Date, detectedCircle: Circle): Parsed {
   // Preprocess input to handle common abbreviations and special times
-  let processedInput = input
+  const processedInput = input
     // Handle "p" abbreviation for "pm"
     .replace(/\b(\d{1,2})([:\d]*)\s*p\b/g, '$1$2 pm')
     // Handle "a" abbreviation for "am" 
@@ -233,7 +233,7 @@ function parseInput(input: string, refDate: Date, detectedCircle: Circle): Parse
   title = title.replace(/,\s*$/, '').replace(/\.\s*$/, '').trim();
 
   // Detect emoji
-  const emoji = detectEmoji(input, detectedCircle);
+  const emoji = detectEmoji(input);
 
   return {
     title,
@@ -408,7 +408,7 @@ export default function CreateInvitePage() {
           {/* Helper text when typing but no time detected */}
           {input && !parsed.start && (
             <div className="mt-2 text-sm text-slate-500">
-              💡 Add a time like <span className="font-medium">"3pm"</span> or <span className="font-medium">"tomorrow"</span> to create your invite
+              💡 Add a time like <span className="font-medium">&quot;3pm&quot;</span> or <span className="font-medium">&quot;tomorrow&quot;</span> to create your invite
             </div>
           )}
 
@@ -442,9 +442,9 @@ export default function CreateInvitePage() {
                       <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">
                         {detectedCircle}
                       </span>
-                      <span className="text-sm text-slate-600">
-                        Come if you're free ✨
-                      </span>
+        <span className="text-sm text-slate-600">
+          Come if you&apos;re free ✨
+        </span>
                     </div>
                   )}
                 </div>

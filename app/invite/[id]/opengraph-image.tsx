@@ -122,7 +122,7 @@ export default async function Image({
             color: '#ffffff',
             fontWeight: '500'
           }}>
-            Come if you're free ✨
+            Come if you&apos;re free ✨
           </div>
         </div>
       ),
