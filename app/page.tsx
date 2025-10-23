@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 
 export default function HomePage() {
+  const router = useRouter();
   const [checking, setChecking] = useState(true);
   const [email, setEmail] = useState<string | null>(null);
 
@@ -92,13 +94,20 @@ export default function HomePage() {
             fontSize: '0.95rem',
             fontWeight: '500'
           }}>
-            <a href="/login" style={{ 
-              color: '#92400e', 
-              textDecoration: 'underline',
-              fontWeight: '600'
-            }}>
+            <button 
+              onClick={() => router.push('/login')}
+              style={{ 
+                color: '#92400e', 
+                textDecoration: 'underline',
+                fontWeight: '600',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: 0
+              }}
+            >
               Log in
-            </a> to create and manage invites
+            </button> to create and manage invites
           </p>
         </div>
       )}
@@ -111,62 +120,66 @@ export default function HomePage() {
         maxWidth: '400px',
         margin: '2rem auto 0'
       }}>
-        <a
-          href="/create"
+        <button
+          onClick={() => router.push('/create')}
           style={{
             display: 'block',
+            width: '100%',
             textAlign: 'center',
             padding: '1rem 2rem',
             background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
             color: '#fff',
             borderRadius: '12px',
-            textDecoration: 'none',
+            border: 'none',
             fontWeight: '600',
             fontSize: '1.1rem',
             boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
-            transition: 'all 0.2s ease'
+            transition: 'all 0.2s ease',
+            cursor: 'pointer'
           }}
         >
           Create an invite
-        </a>
+        </button>
 
-        <a
-          href="/my"
+        <button
+          onClick={() => router.push('/my')}
           style={{
             display: 'block',
+            width: '100%',
             textAlign: 'center',
             padding: '1rem 2rem',
             background: '#f8fafc',
             color: '#374151',
             borderRadius: '12px',
-            textDecoration: 'none',
+            border: '1px solid #e5e7eb',
             fontWeight: '600',
             fontSize: '1.1rem',
-            border: '1px solid #e5e7eb',
-            transition: 'all 0.2s ease'
+            transition: 'all 0.2s ease',
+            cursor: 'pointer'
           }}
         >
           See my invites
-        </a>
+        </button>
 
         {!email && (
-          <a
-            href="/login"
+          <button
+            onClick={() => router.push('/login')}
             style={{
               display: 'block',
+              width: '100%',
               textAlign: 'center',
               padding: '1rem 2rem',
               background: '#f3f4f6',
               color: '#374151',
               borderRadius: '12px',
-              textDecoration: 'none',
+              border: '1px solid #d1d5db',
               fontWeight: '600',
               fontSize: '1.1rem',
-              border: '1px solid #d1d5db'
+              cursor: 'pointer'
             }}
           >
             Log in
-          </a>
+          </button>
         )}
       </div>
     </main>

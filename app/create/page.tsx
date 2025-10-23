@@ -12,12 +12,121 @@ type Parsed = {
   start: Date | null;
   end: Date | null;
   whenText: string | null;
+  emoji: string | null;
 };
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
+
+// Comprehensive emoji mapping with variations and context awareness
+const EMOJI_MAPPINGS = [
+  // Sports & Fitness
+  { keywords: ['table tennis', 'ping pong'], emoji: '🏓' },
+  { keywords: ['tennis'], emoji: '🎾' },
+  { keywords: ['gym', 'gymnasium', 'workout', 'work out', 'exercising', 'exercise'], emoji: '💪' },
+  { keywords: ['running', 'run', 'jog', 'jogging', 'marathon'], emoji: '🏃' },
+  { keywords: ['hiking', 'hike', 'trail'], emoji: '🥾' },
+  { keywords: ['swimming', 'swim', 'pool'], emoji: '🏊' },
+  { keywords: ['basketball', 'hoops'], emoji: '🏀' },
+  { keywords: ['football', 'soccer', 'futbol'], emoji: '⚽' },
+  { keywords: ['cycling', 'bike', 'biking', 'bicycle'], emoji: '🚴' },
+  { keywords: ['yoga', 'meditation'], emoji: '🧘' },
+  { keywords: ['golf', 'golfing'], emoji: '⛳' },
+  { keywords: ['climbing', 'rock climbing', 'bouldering'], emoji: '🧗' },
+
+  // Food & Drinks (with work context override)
+  { keywords: ['coffee', 'cafe', 'latte', 'espresso', 'cappuccino'], emoji: '☕' },
+  { keywords: ['dinner', 'dining'], emoji: '🍽️' },
+  { keywords: ['lunch'], emoji: '🥪', workContext: '🥗' }, // Different emoji for work lunch
+  { keywords: ['brunch', 'breakfast'], emoji: '🥞' },
+  { keywords: ['drinks', 'cocktails', 'cocktail', 'bar', 'happy hour'], emoji: '🍸' },
+  { keywords: ['beer', 'brewery', 'brewing'], emoji: '🍺' },
+  { keywords: ['wine', 'winery', 'tasting'], emoji: '🍷' },
+  { keywords: ['pizza'], emoji: '🍕' },
+  { keywords: ['sushi'], emoji: '🍣' },
+  { keywords: ['ice cream', 'dessert'], emoji: '🍦' },
+  { keywords: ['cake', 'birthday cake'], emoji: '🎂' },
+
+  // Entertainment
+  { keywords: ['movie', 'cinema', 'film', 'movies', 'movie night'], emoji: '🎬' },
+  { keywords: ['concert', 'music', 'live music', 'gig', 'show'], emoji: '🎵' },
+  { keywords: ['party', 'celebration'], emoji: '🎉' },
+  { keywords: ['game', 'gaming', 'video games', 'board games', 'game night'], emoji: '🎮' },
+  { keywords: ['bowling'], emoji: '🎳' },
+  { keywords: ['karaoke'], emoji: '🎤' },
+  { keywords: ['museum', 'exhibition'], emoji: '🏛️' },
+  { keywords: ['art', 'gallery', 'painting'], emoji: '🎨' },
+
+  // Family & Kids
+  { keywords: ['kids', 'children', 'child', 'baby'], emoji: '👶' },
+  { keywords: ['park', 'playground', 'play date'], emoji: '🌳' },
+  { keywords: ['zoo', 'aquarium'], emoji: '🦁' },
+  { keywords: ['library', 'story time'], emoji: '📚' },
+  { keywords: ['school', 'pickup'], emoji: '🏫' },
+
+  // Work & Professional
+  { keywords: ['meeting', 'meet', 'standup', 'sync'], emoji: '🤝' },
+  { keywords: ['office', 'work', 'working', 'workplace'], emoji: '💼' },
+  { keywords: ['conference', 'convention', 'summit'], emoji: '🎯' },
+  { keywords: ['presentation', 'demo', 'pitch'], emoji: '📊' },
+
+  // Shopping & Errands
+  { keywords: ['shopping', 'shop', 'mall'], emoji: '🛍️' },
+  { keywords: ['market', 'grocery', 'grocery store', 'supermarket'], emoji: '🛒' },
+  { keywords: ['flea market', 'thrift'], emoji: '🏺' },
+
+  // Outdoor & Nature
+  { keywords: ['beach', 'ocean', 'shore'], emoji: '🏖️' },
+  { keywords: ['camping', 'camp'], emoji: '⛺' },
+  { keywords: ['picnic'], emoji: '🧺' },
+  { keywords: ['gardening', 'garden'], emoji: '🌱' },
+  { keywords: ['sunset', 'sunrise'], emoji: '🌅' },
+  { keywords: ['stargazing', 'stars'], emoji: '⭐' },
+
+  // Travel & Transportation
+  { keywords: ['road trip', 'driving'], emoji: '🚗' },
+  { keywords: ['airport', 'flight', 'flying'], emoji: '✈️' },
+  { keywords: ['train', 'railway'], emoji: '🚂' },
+  { keywords: ['walking', 'walk'], emoji: '🚶' },
+
+  // Special Occasions
+  { keywords: ['birthday', 'bday'], emoji: '🎂' },
+  { keywords: ['anniversary'], emoji: '💕' },
+  { keywords: ['wedding', 'ceremony'], emoji: '💒' },
+  { keywords: ['graduation', 'grad'], emoji: '🎓' },
+  { keywords: ['holiday', 'vacation'], emoji: '🎊' },
+
+  // Home & Relaxation
+  { keywords: ['spa', 'massage', 'relaxation'], emoji: '💆' },
+  { keywords: ['book club', 'reading', 'books'], emoji: '📖' },
+  { keywords: ['board games', 'game night'], emoji: '🎲' },
+  { keywords: ['cooking', 'baking', 'recipe'], emoji: '👨‍🍳' },
+
+  // Modern Activities
+  { keywords: ['photography', 'photo', 'photos', 'photoshoot'], emoji: '📸' },
+  { keywords: ['podcast', 'recording'], emoji: '🎙️' },
+  { keywords: ['streaming', 'netflix', 'movie night'], emoji: '📺' },
+  { keywords: ['zoom', 'video call', 'meeting'], emoji: '💻' },
+];
+
+function formatTimeDisplay(date: Date): string {
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  
+  // Handle special times
+  if (hours === 0 && minutes === 0) return 'Midnight';
+  if (hours === 12 && minutes === 0) return 'Noon';
+  
+  // Format regular times
+  const timeString = date.toLocaleTimeString(undefined, { 
+    hour: 'numeric', 
+    minute: minutes === 0 ? undefined : '2-digit'
+  });
+  
+  return timeString;
+}
 
 function formatPreview(p: Parsed): string {
   if (!p.title) return 'add a title';
@@ -38,10 +147,72 @@ function formatPreview(p: Parsed): string {
   return `${p.title} — ${start} to ${end}`;
 }
 
-function parseInput(input: string, refDate: Date): Parsed {
-  console.log('Parsing input:', input, 'with refDate:', refDate);
-  const results = chrono.parse(input, refDate);
-  console.log('Chrono results:', results);
+function detectEmoji(input: string, detectedCircle: Circle): string | null {
+  const lowerInput = input.toLowerCase();
+  
+  // Check for work context
+  const workContextKeywords = ['office', 'work', 'meeting', 'coworker', 'colleague', 'team', 'project', 'conference'];
+  const isWorkContext = workContextKeywords.some(keyword => lowerInput.includes(keyword));
+  
+  // Find matching emoji
+  for (const mapping of EMOJI_MAPPINGS) {
+    for (const keyword of mapping.keywords) {
+      if (lowerInput.includes(keyword.toLowerCase())) {
+        // Use work context emoji if available and in work context
+        if (isWorkContext && mapping.workContext) {
+          return mapping.workContext;
+        }
+        return mapping.emoji;
+      }
+    }
+  }
+  
+  return null;
+}
+
+function detectCircle(input: string): Circle {
+  const lowerInput = input.toLowerCase();
+  
+  // Family keywords
+  const familyKeywords = ['kids', 'children', 'family', 'mom', 'dad', 'parents', 'grandma', 'grandpa', 'park', 'playground'];
+  if (familyKeywords.some(keyword => lowerInput.includes(keyword))) {
+    return 'Family';
+  }
+  
+  // Work keywords
+  const workKeywords = ['work', 'office', 'meeting', 'lunch', 'coworker', 'colleague', 'team', 'project'];
+  if (workKeywords.some(keyword => lowerInput.includes(keyword))) {
+    return 'Coworkers';
+  }
+  
+  // Default to Close Friends for social activities
+  const socialKeywords = ['dinner', 'drinks', 'party', 'movie', 'concert', 'game', 'tennis', 'gym', 'hiking', 'brunch', 'coffee'];
+  if (socialKeywords.some(keyword => lowerInput.includes(keyword))) {
+    return 'Close Friends';
+  }
+  
+  return 'Close Friends'; // Default fallback
+}
+
+function parseInput(input: string, refDate: Date, detectedCircle: Circle): Parsed {
+  // Preprocess input to handle common abbreviations and special times
+  let processedInput = input
+    // Handle "p" abbreviation for "pm"
+    .replace(/\b(\d{1,2})([:\d]*)\s*p\b/g, '$1$2 pm')
+    // Handle "a" abbreviation for "am" 
+    .replace(/\b(\d{1,2})([:\d]*)\s*a\b/g, '$1$2 am')
+    // Handle "noon" as 12:00 pm
+    .replace(/\bnoon\b/gi, '12:00 pm')
+    // Handle "midnight" as :00 am
+    .replace(/\bmidnight\b/gi, '12:00 am')
+    // Handle "midday" as 12:00 pm
+    .replace(/\bmidday\b/gi, '12:00 pm')
+    // Handle "noon to X" pattern - assume pm if no am/pm specified
+    .replace(/\bnoon\s+to\s+(\d{1,2})([:\d]*)\b(?!\s*(?:am|pm|a|p)\b)/gi, '12:00 pm to $1$2 pm')
+    // Handle "X to Y" pattern where X is pm and Y has no am/pm - assume Y is pm too
+    .replace(/\b(\d{1,2})([:\d]*)\s*pm\s+to\s+(\d{1,2})([:\d]*)\b(?!\s*(?:am|pm|a|p)\b)/gi, '$1$2 pm to $3$4 pm');
+
+  const results = chrono.parse(processedInput, refDate);
   
   let start: Date | null = null;
   let end: Date | null = null;
@@ -51,7 +222,6 @@ function parseInput(input: string, refDate: Date): Parsed {
     start = r.start?.date() ?? null;
     // End may be missing; if so, default to +60min from start
     end = r.end?.date() ?? (start ? new Date(start.getTime() + 60 * 60 * 1000) : null);
-    console.log('Parsed dates:', { start, end });
   }
 
   // Title is input with the time phrase removed (best effort)
@@ -62,11 +232,15 @@ function parseInput(input: string, refDate: Date): Parsed {
   // Clean up common punctuation that might be left behind
   title = title.replace(/,\s*$/, '').replace(/\.\s*$/, '').trim();
 
+  // Detect emoji
+  const emoji = detectEmoji(input, detectedCircle);
+
   return {
     title,
     start,
     end,
     whenText: results.length > 0 ? results[0].text : null,
+    emoji,
   };
 }
 
@@ -79,6 +253,8 @@ export default function CreateInvitePage() {
   const [creating, setCreating] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [link, setLink] = useState<string | null>(null);
+  const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null);
+  const [emojiManuallyRemoved, setEmojiManuallyRemoved] = useState(false);
 
   // auth
   useEffect(() => {
@@ -95,8 +271,30 @@ export default function CreateInvitePage() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  const parsed = useMemo(() => parseInput(input, new Date()), [input]);
+  const detectedCircle = useMemo(() => detectCircle(input), [input]);
+  const parsed = useMemo(() => parseInput(input, new Date(), detectedCircle), [input, detectedCircle]);
   const preview = useMemo(() => formatPreview(parsed), [parsed]);
+
+  // Auto-update circle when input changes and circle is detected
+  useEffect(() => {
+    if (input && detectedCircle !== circle) {
+      setCircle(detectedCircle);
+    }
+  }, [input, detectedCircle, circle]);
+
+  // Auto-update emoji when input changes (unless manually removed)
+  useEffect(() => {
+    if (input && !emojiManuallyRemoved) {
+      setSelectedEmoji(parsed.emoji);
+    }
+  }, [input, parsed.emoji, emojiManuallyRemoved]);
+
+  // Reset emoji removal flag when input changes significantly
+  useEffect(() => {
+    if (input && !parsed.emoji) {
+      setEmojiManuallyRemoved(false);
+    }
+  }, [input, parsed.emoji]);
 
   const canCreate =
     !!user &&
@@ -125,7 +323,7 @@ export default function CreateInvitePage() {
         .insert([
           {
             creator_id: user.id,
-            title: parsed.title,
+            title: selectedEmoji ? `${selectedEmoji} ${parsed.title}` : parsed.title,
             window_start: parsed.start.toISOString(),
             window_end: parsed.end.toISOString(),
             host_name: hostName || user.email?.split('@')[0],
@@ -141,7 +339,8 @@ export default function CreateInvitePage() {
         return;
       }
       const id: string = data.id;
-      const url = `${process.env.NEXT_PUBLIC_BASE_URL ?? 'https://nowish.vercel.app'}/invite/${id}`;
+      const base = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://nowish.vercel.app');
+      const url = `${base}/invite/${id}`;
       setLink(url);
 
       // try to share right away
@@ -206,21 +405,120 @@ export default function CreateInvitePage() {
             autoFocus
           />
 
-          {/* Preview */}
-          <div className="text-sm text-slate-500">
-            <span className="font-medium">Preview:</span>{' '}
-            {parsed.start ? (
-              <span className="text-slate-700">{preview}</span>
-            ) : (
-              <span>add a time so we can parse it</span>
-            )}
-          </div>
+          {/* Helper text when typing but no time detected */}
+          {input && !parsed.start && (
+            <div className="mt-2 text-sm text-slate-500">
+              💡 Add a time like <span className="font-medium">"3pm"</span> or <span className="font-medium">"tomorrow"</span> to create your invite
+            </div>
+          )}
+
+          {/* Live Preview Card */}
+          {input && (
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-6 shadow-lg">
+              <div className="mb-3 flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
+                <span className="text-sm font-medium text-slate-600">Live Preview</span>
+              </div>
+              
+              <div className="space-y-3">
+                {/* Title */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    {selectedEmoji && (
+                      <span className="text-xl">{selectedEmoji}</span>
+                    )}
+                    <div className="text-lg font-semibold text-slate-900">
+                      {parsed.title ? (
+                        <span>
+                          {hostName || 'You'} would love to see you at {parsed.title}
+                        </span>
+                      ) : (
+                        'What are you doing?'
+                      )}
+                    </div>
+                  </div>
+                  {parsed.title && (
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">
+                        {detectedCircle}
+                      </span>
+                      <span className="text-sm text-slate-600">
+                        Come if you're free ✨
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Emoji Control */}
+                {parsed.emoji && (
+                  <div className="flex items-center gap-2 text-sm">
+                    {selectedEmoji ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-500">Nowish guessed {selectedEmoji} for this</span>
+                        <button
+                          onClick={() => {
+                            setSelectedEmoji(null);
+                            setEmojiManuallyRemoved(true);
+                          }}
+                          className="text-slate-500 hover:text-slate-700 underline"
+                        >
+                          remove
+                        </button>
+                      </div>
+                    ) : emojiManuallyRemoved ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-600">Emoji removed</span>
+                        <button
+                          onClick={() => {
+                            setSelectedEmoji(parsed.emoji);
+                            setEmojiManuallyRemoved(false);
+                          }}
+                          className="text-blue-600 hover:text-blue-800 underline"
+                        >
+                          add back {parsed.emoji}
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                )}
+
+                {/* Time */}
+                {parsed.start ? (
+                  <div className="flex items-center gap-2 text-slate-600">
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="font-medium">
+                      {parsed.start.toLocaleDateString(undefined, { 
+                        weekday: 'short', 
+                        month: 'short', 
+                        day: 'numeric' 
+                      })}, {formatTimeDisplay(parsed.start)}
+                      {parsed.end && ` – ${formatTimeDisplay(parsed.end)}`}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="text-slate-400 italic">
+                    Add a time to see when this happens
+                  </div>
+                )}
+
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Circle & Host */}
         <div className="mt-6 grid gap-6 md:grid-cols-2">
           <div className="space-y-2">
-            <label className="block text-lg font-semibold text-slate-900">Who&apos;s this for?</label>
+            <div className="flex items-center gap-2">
+              <label className="block text-lg font-semibold text-slate-900">Who&apos;s this for?</label>
+              {input && detectedCircle === circle && (
+                <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700">
+                  Auto-detected
+                </span>
+              )}
+            </div>
             <select
               className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
               value={circle}
@@ -258,7 +556,14 @@ export default function CreateInvitePage() {
                 : 'bg-slate-300'
             }`}
           >
-            {creating ? 'Creating…' : 'Create Invite'}
+            {creating 
+              ? 'Creating…' 
+              : canCreate 
+                ? 'Create Invite' 
+                : parsed.start 
+                  ? 'Create Invite'
+                  : 'Need a time first ⏰'
+            }
           </button>
 
           {link && (

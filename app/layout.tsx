@@ -3,7 +3,7 @@ import './globals.css';
 import type { Metadata, Viewport } from 'next';
 
 const BASE =
-  process.env.NEXT_PUBLIC_BASE_URL ?? 'https://nowish.vercel.app';
+  process.env.NEXT_PUBLIC_SITE_URL ?? 'https://nowish.vercel.app';
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE),

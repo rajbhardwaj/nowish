@@ -14,11 +14,11 @@ export default function LoginPage() {
     setBusy(true);
 
     try {
-      const base = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
-
       const result = await supabase.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: `${base}/auth/callback?next=/create` },
+        options: { 
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=/create` 
+        },
       });
 
       if (result.error) {

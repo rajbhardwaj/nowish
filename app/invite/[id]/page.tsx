@@ -49,22 +49,29 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
   const { data: invite } = await supabaseServer
     .from('open_invites')
-    .select('id, title, window_start, window_end')
+    .select('id, title, window_start, window_end, host_name')
     .eq('id', id)
     .maybeSingle();
 
-  const title = invite?.title ? `Nowish: ${invite.title}` : 'Nowish Invite';
+  const hostName = invite?.host_name || 'Someone';
+  const title = invite?.title || 'Nowish Invite';
+  
+  // Extract emoji from title if present (simplified regex for better compatibility)
+  const emojiMatch = title.match(/^([^\w\s])\s+(.+)$/);
+  const cleanTitle = emojiMatch ? emojiMatch[2] : title;
+  
+  const personalTitle = `${hostName} would love to see you at ${cleanTitle}`;
   const when = formatWhen(invite?.window_start, invite?.window_end);
   // Try dynamic image with simplified generation
   const ogUrl = `${base}/invite/${id}/opengraph-image`;
 
   return {
-    title,
-    description: when,
+    title: personalTitle,
+    description: `${when} • Come if you're free ✨`,
     openGraph: {
       type: 'website',
-      title,
-      description: when,
+      title: personalTitle,
+      description: `${when} • Come if you're free ✨`,
       url: `${base}/invite/${id}`,
       siteName: 'Nowish',
       images: [
@@ -72,15 +79,15 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
           url: ogUrl,
           width: 1200,
           height: 630,
-          alt: 'Nowish Invite',
+          alt: personalTitle,
           type: 'image/png',
         },
       ],
     },
     twitter: {
       card: 'summary_large_image',
-      title,
-      description: when,
+      title: personalTitle,
+      description: `${when} • Come if you're free ✨`,
       images: [ogUrl],
     },
     alternates: { canonical: `${base}/invite/${id}` },
