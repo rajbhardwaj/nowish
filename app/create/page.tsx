@@ -164,11 +164,11 @@ function formatPreview(p: Parsed): string {
   const endMeridiem = end.includes('AM') ? 'AM' : 'PM';
   const sameMeridiem = startMeridiem === endMeridiem;
   
-  // Format end time - remove meridiem if same as start
-  const endTimeOnly = endFormatted.replace(/ (AM|PM)/, '');
-  const finalEndTime = sameMeridiem ? endTimeOnly : endFormatted;
+  // Format start time - remove meridiem if same as end
+  const startTimeOnly = startFormatted.replace(/ (AM|PM)/, '');
+  const finalStartTime = sameMeridiem ? startTimeOnly : startFormatted;
   
-  return `${p.title} — ${startFormatted}–${finalEndTime}`;
+  return `${p.title} — ${finalStartTime}–${endFormatted}`;
 }
 
 function detectEmoji(input: string): string | null {
