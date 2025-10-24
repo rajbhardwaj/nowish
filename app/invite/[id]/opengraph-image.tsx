@@ -87,7 +87,7 @@ export default async function Image({
         { keywords: ['table tennis', 'ping pong'], emoji: '🏓' },
         { keywords: ['tennis'], emoji: '🎾' },
         { keywords: ['gym', 'gymnasium', 'workout', 'work out', 'exercising', 'exercise'], emoji: '💪' },
-        { keywords: ['running', 'run', 'jog', 'jogging', 'marathon'], emoji: '🏃' },
+        { keywords: ['running', 'jog', 'jogging', 'marathon'], emoji: '🏃' },
         { keywords: ['hiking', 'hike', 'trail'], emoji: '🥾' },
         { keywords: ['swimming', 'swim', 'pool'], emoji: '🏊' },
         { keywords: ['basketball', 'hoops'], emoji: '🏀' },
