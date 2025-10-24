@@ -48,13 +48,13 @@ export default function HostRosterPage() {
       <section style={{marginTop:12}}>
         <h3>Joining ({joins.length})</h3>
         {joins.length ? (
-          <ul>{joins.map((r,i)=> <li key={i}>{r.guest_name || 'Guest'} {r.guest_email ? `· ${r.guest_email}`:''}</li>)}</ul>
+          <ul>{joins.map((r,i)=> <li key={i}>{r.guest_name || r.guest_email?.split('@')[0] || 'Guest'} {r.guest_email ? `· ${r.guest_email}`:''}</li>)}</ul>
         ) : <p>No one yet.</p>}
       </section>
       <section>
         <h3>Maybe ({maybes.length})</h3>
         {maybes.length ? (
-          <ul>{maybes.map((r,i)=> <li key={i}>{r.guest_name || 'Guest'} {r.guest_email ? `· ${r.guest_email}`:''}</li>)}</ul>
+          <ul>{maybes.map((r,i)=> <li key={i}>{r.guest_name || r.guest_email?.split('@')[0] || 'Guest'} {r.guest_email ? `· ${r.guest_email}`:''}</li>)}</ul>
         ) : <p>No maybes yet.</p>}
       </section>
     </main>

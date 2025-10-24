@@ -418,6 +418,17 @@ export default function CreateInvitePage() {
         return;
       }
       const id: string = data.id;
+      
+      // Add the host as the first RSVP
+      await supabase
+        .from('rsvps')
+        .insert({
+          invite_id: id,
+          state: 'join',
+          guest_email: user.email,
+          guest_name: hostName || user.email?.split('@')[0],
+        });
+      
       const base = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://nowish.vercel.app');
       const url = `${base}/invite/${id}`;
       setLink(url);
