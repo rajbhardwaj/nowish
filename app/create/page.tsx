@@ -291,6 +291,7 @@ export default function CreateInvitePage() {
   const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null);
   const [emojiManuallyRemoved, setEmojiManuallyRemoved] = useState(false);
   const [currentTipIndex, setCurrentTipIndex] = useState(0);
+  const [circleManuallyChanged, setCircleManuallyChanged] = useState(false);
 
   const rotatingTips = [
     'Try "Coffee at 3pm today"',
@@ -332,12 +333,12 @@ export default function CreateInvitePage() {
   const parsed = useMemo(() => parseInput(input, new Date()), [input]);
   const preview = useMemo(() => formatPreview(parsed), [parsed]);
 
-  // Auto-update circle when input changes and circle is detected
+  // Auto-update circle when input changes and circle is detected (unless manually changed)
   useEffect(() => {
-    if (input && detectedCircle !== circle) {
+    if (input && detectedCircle !== circle && !circleManuallyChanged) {
       setCircle(detectedCircle);
     }
-  }, [input, detectedCircle, circle]);
+  }, [input, detectedCircle, circle, circleManuallyChanged]);
 
   // Auto-update emoji when input changes (unless manually removed)
   useEffect(() => {
@@ -636,7 +637,10 @@ export default function CreateInvitePage() {
             <select
               className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
               value={circle}
-              onChange={(e) => setCircle(e.target.value as Circle)}
+              onChange={(e) => {
+                setCircle(e.target.value as Circle);
+                setCircleManuallyChanged(true);
+              }}
             >
               <option>Family</option>
               <option>Close Friends</option>
