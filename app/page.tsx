@@ -152,7 +152,7 @@ export default function HomePage() {
           About to do something?
         </div>
         <p className="text-xl text-slate-700 mb-2 font-medium leading-tight" style={{ textWrap: 'balance' }}>
-          See who's in.
+          See who&apos;s in.
         </p>
         <p className="text-base text-slate-600 mb-6 font-normal">
           Text it like you would—we make it look good.
