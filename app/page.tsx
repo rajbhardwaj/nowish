@@ -94,16 +94,16 @@ export default function HomePage() {
       
       <main style={{ 
         maxWidth: 600, 
-        margin: '4rem auto', 
-        padding: '2rem 1.5rem',
+        margin: '1rem auto', 
+        padding: '1rem 1.5rem',
         textAlign: 'center'
       }}>
       {/* Hero Section */}
-      <div style={{ marginBottom: '3rem' }}>
+      <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ 
           fontSize: '4rem',
           fontWeight: '800',
-          margin: '0 0 1rem',
+          margin: '0 0 0.5rem',
           background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
           backgroundClip: 'text',
           WebkitBackgroundClip: 'text',
@@ -114,7 +114,7 @@ export default function HomePage() {
         </h1>
         <div style={{ 
           fontSize: '1.5rem',
-          marginBottom: '0.5rem',
+          marginBottom: '0.25rem',
           color: '#6b7280'
         }}>
           ⚡️
@@ -122,7 +122,7 @@ export default function HomePage() {
         <p style={{ 
           fontSize: '1.25rem',
           color: '#6b7280',
-          margin: '0 0 1rem',
+          margin: '0 0 0.5rem',
           fontWeight: '500'
         }}>
           Built for the moment — to see who&apos;s in.
@@ -130,7 +130,7 @@ export default function HomePage() {
         <p style={{ 
           fontSize: '1rem',
           color: '#9ca3af',
-          margin: '0 0 2rem',
+          margin: '0 0 1.5rem',
           fontWeight: '400'
         }}>
           Nowish is for spontaneous hangs.<br />
@@ -140,7 +140,7 @@ export default function HomePage() {
 
       {/* Preview Card */}
       <div style={{ 
-        margin: '0 auto 3rem',
+        margin: '0 auto 2rem',
         maxWidth: '320px',
         background: '#f8f9fa',
         borderRadius: '16px',

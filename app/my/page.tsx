@@ -8,11 +8,31 @@ export default function MyInvitesPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [user, setUser] = useState<any>(null);
+  const [displayName, setDisplayName] = useState('');
+  const [editingName, setEditingName] = useState(false);
+  const [savingName, setSavingName] = useState(false);
 
     useEffect(() => {
     (async () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) { window.location.href = '/login'; return; }
+        
+        setUser(user);
+        
+        // Load user's display name from their profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('id', user.id)
+          .single();
+        
+        if (profile?.display_name) {
+          setDisplayName(profile.display_name);
+        } else {
+          // Fallback to email username
+          setDisplayName(user.email?.split('@')[0] || '');
+        }
 
         // Get your invites
         const { data: invites, error } = await supabase
@@ -44,6 +64,33 @@ export default function MyInvitesPage() {
         setLoading(false);
     })();
     }, []);
+
+  async function saveDisplayName() {
+    if (!user || !displayName.trim()) return;
+    
+    setSavingName(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({ 
+          id: user.id, 
+          display_name: displayName.trim(),
+          email: user.email 
+        });
+      
+      if (error) {
+        alert('Failed to save display name: ' + error.message);
+        return;
+      }
+      
+      setEditingName(false);
+    } catch (err) {
+      alert('Failed to save display name');
+      console.error(err);
+    } finally {
+      setSavingName(false);
+    }
+  }
 
   async function handleDelete(inviteId: string) {
     if (!confirm('Are you sure you want to delete this invite? This cannot be undone.')) return;
@@ -90,6 +137,52 @@ export default function MyInvitesPage() {
           <h1 className="text-4xl font-bold tracking-tight text-slate-900">My Invites</h1>
           <p className="text-slate-600">Manage your invites and see who&apos;s coming</p>
         </header>
+
+        {/* User Profile Section */}
+        <div className="rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-lg backdrop-blur-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <h2 className="text-lg font-semibold text-slate-900">Your Display Name</h2>
+              <p className="text-sm text-slate-600">This is how your name appears on invites</p>
+              
+              {editingName ? (
+                <div className="mt-3 flex items-center gap-3">
+                  <input
+                    type="text"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    className="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                    placeholder="Enter your display name"
+                    maxLength={50}
+                  />
+                  <button
+                    onClick={saveDisplayName}
+                    disabled={savingName || !displayName.trim()}
+                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                  >
+                    {savingName ? 'Saving...' : 'Save'}
+                  </button>
+                  <button
+                    onClick={() => setEditingName(false)}
+                    className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500/20"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <div className="mt-3 flex items-center gap-3">
+                  <span className="text-lg font-medium text-slate-900">{displayName}</span>
+                  <button
+                    onClick={() => setEditingName(true)}
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500/20"
+                  >
+                    Edit
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
 
         {rows.length === 0 ? (
           <div className="rounded-2xl border border-slate-200 bg-white/90 p-8 text-center shadow-lg backdrop-blur-sm">

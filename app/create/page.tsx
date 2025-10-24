@@ -281,11 +281,23 @@ export default function CreateInvitePage() {
 
   // auth
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data }) => {
       setUser(data.session?.user ?? null);
-      if (data.session?.user?.email) {
-        const handle = data.session.user.email.split('@')[0] ?? '';
-        setHostName((prev) => prev || handle);
+      if (data.session?.user) {
+        // Load user's display name from their profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('id', data.session.user.id)
+          .single();
+        
+        if (profile?.display_name) {
+          setHostName(profile.display_name);
+        } else {
+          // Fallback to email username
+          const handle = data.session.user.email?.split('@')[0] ?? '';
+          setHostName(handle);
+        }
       }
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_e, sess) => {
@@ -329,23 +341,15 @@ export default function CreateInvitePage() {
     }
   }, [input, rotatingTips.length]);
 
-  // Scroll to show preview when input is focused
+  // Scroll to show input and preview when tapped on mobile
   const handleInputFocus = () => {
-    // Wait for keyboard to appear, then scroll to show the preview
+    // Wait for keyboard to appear, then scroll to show the "Tell us about it" label
     setTimeout(() => {
-      const previewCard = document.getElementById('live-preview-card');
-      if (previewCard) {
-        previewCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      } else {
-        // Fallback: scroll to top
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+      const label = document.querySelector('label');
+      if (label) {
+        label.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
-    }, 200);
-    
-    // Additional backup scroll
-    setTimeout(() => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 600);
+    }, 300);
   };
 
   const canCreate =
@@ -483,7 +487,7 @@ export default function CreateInvitePage() {
             placeholder="Type your invite here..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onFocus={handleInputFocus}
+            onClick={handleInputFocus}
             autoFocus
           />
 
@@ -519,7 +523,7 @@ export default function CreateInvitePage() {
                     <div className="text-lg font-semibold text-slate-900">
                       {parsed.title ? (
                         <span>
-                          {hostName || 'You'} would love to see you at {parsed.title}
+                          {hostName || 'A friend'} would love to see you at {parsed.title}
                         </span>
                       ) : (
                         'What are you doing?'
