@@ -41,7 +41,7 @@ export default function HomePage() {
     if (typeof navigator !== 'undefined' && navigator.vibrate && window.isSecureContext) {
       try {
         navigator.vibrate(50); // 50ms vibration
-      } catch (e) {
+      } catch {
         // Ignore vibration errors
       }
     }

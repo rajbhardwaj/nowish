@@ -49,7 +49,7 @@ export default function SetupNamePage() {
       <div className="space-y-6">
         <header className="space-y-2 text-center">
           <h1 className="text-4xl font-bold tracking-tight text-slate-900">Nowish ⚡</h1>
-          <p className="text-slate-600">Let's personalize your invites</p>
+          <p className="text-slate-600">Let&apos;s personalize your invites</p>
         </header>
 
         <div className="rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-lg backdrop-blur-sm">
