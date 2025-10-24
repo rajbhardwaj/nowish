@@ -210,7 +210,29 @@ function detectCircle(input: string): Circle {
     // Handle "noon to X" pattern - assume pm if no am/pm specified
     .replace(/\bnoon\s+to\s+(\d{1,2})([:\d]*)\b(?!\s*(?:am|pm|a|p)\b)/gi, '12:00 pm to $1$2 pm')
     // Handle "X to Y" pattern where X is pm and Y has no am/pm - assume Y is pm too
-    .replace(/\b(\d{1,2})([:\d]*)\s*pm\s+to\s+(\d{1,2})([:\d]*)\b(?!\s*(?:am|pm|a|p)\b)/gi, '$1$2 pm to $3$4 pm');
+    .replace(/\b(\d{1,2})([:\d]*)\s*pm\s+to\s+(\d{1,2})([:\d]*)\b(?!\s*(?:am|pm|a|p)\b)/gi, '$1$2 pm to $3$4 pm')
+    // Handle time ranges like "3-5" or "10-11" - assume daytime hours
+    .replace(/\b(\d{1,2})([:\d]*)\s*[-–—]\s*(\d{1,2})([:\d]*)\b(?!\s*(?:am|pm|a|p)\b)/g, (match, startHour, startMin, endHour, endMin) => {
+      const start = parseInt(startHour);
+      const end = parseInt(endHour);
+      
+      // If it's clearly morning hours (6-11), assume AM
+      if (start >= 6 && start <= 11 && end >= 6 && end <= 11) {
+        return `${startHour}${startMin} am - ${endHour}${endMin} am`;
+      }
+      // If it's clearly evening hours (8-11), assume PM  
+      else if (start >= 8 && start <= 11 && end >= 8 && end <= 11) {
+        return `${startHour}${startMin} pm - ${endHour}${endMin} pm`;
+      }
+      // For afternoon hours (12-7), assume PM
+      else if (start >= 12 || start <= 7 || end >= 12 || end <= 7) {
+        return `${startHour}${startMin} pm - ${endHour}${endMin} pm`;
+      }
+      // Default to PM for most cases
+      else {
+        return `${startHour}${startMin} pm - ${endHour}${endMin} pm`;
+      }
+    });
 
   const results = chrono.parse(processedInput, refDate);
   
@@ -404,7 +426,6 @@ export default function CreateInvitePage() {
         try {
           await navigator.share({
             title: parsed.title,
-            text: preview,
             url,
           });
         } catch {
