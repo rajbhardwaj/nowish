@@ -332,7 +332,7 @@ export default function CreateInvitePage() {
 
   // Detect keyboard open/close on mobile
   useEffect(() => {
-    let initialHeight = window.innerHeight;
+    const initialHeight = window.innerHeight;
     
     const handleResize = () => {
       const currentHeight = window.innerHeight;
