@@ -13,6 +13,7 @@ export default function HomePage() {
   const [totalInvites, setTotalInvites] = useState<number | null>(null);
   const [showWhyAccordion, setShowWhyAccordion] = useState(false);
   const [hasPulsed, setHasPulsed] = useState(false);
+  const [showRipple, setShowRipple] = useState(false);
 
   const toggleWhyAccordion = () => {
     const newState = !showWhyAccordion;
@@ -32,18 +33,41 @@ export default function HomePage() {
     }
   };
 
+  const handleCardTouch = () => {
+    // Trigger ripple effect
+    setShowRipple(true);
+    
+    // Trigger haptic feedback (if supported and in secure context)
+    if (typeof navigator !== 'undefined' && navigator.vibrate && window.isSecureContext) {
+      try {
+        navigator.vibrate(50); // 50ms vibration
+      } catch (e) {
+        // Ignore vibration errors
+      }
+    }
+    
+    // Reset ripple after animation
+    setTimeout(() => setShowRipple(false), 600);
+  };
+
   useEffect(() => {
+    // Set checking to false immediately for faster initial render
+    setChecking(false);
+    
+    // Load data in background
     (async () => {
-      const { data } = await supabase.auth.getSession();
-      setEmail(data.session?.user?.email ?? null);
-      
-      // Get total invites created
-      const { count } = await supabase
-        .from('open_invites')
-        .select('*', { count: 'exact', head: true });
-      setTotalInvites(count);
-      
-      setChecking(false);
+      try {
+        const { data } = await supabase.auth.getSession();
+        setEmail(data.session?.user?.email ?? null);
+        
+        // Get total invites created (non-blocking)
+        const { count } = await supabase
+          .from('open_invites')
+          .select('*', { count: 'exact', head: true });
+        setTotalInvites(count);
+      } catch (error) {
+        console.error('Error loading page data:', error);
+      }
     })();
   }, []);
 
@@ -74,7 +98,13 @@ export default function HomePage() {
   }, [hasPulsed]);
 
   if (checking) {
-    return <main style={{ padding: 24 }}>Loading…</main>;
+    return (
+      <main className="max-w-2xl mx-auto px-6 py-4 text-center pb-[max(24px,env(safe-area-inset-bottom))]">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-slate-500">Loading…</div>
+        </div>
+      </main>
+    );
   }
 
   return (
@@ -91,6 +121,38 @@ export default function HomePage() {
           50% { transform: scale(1.05); opacity: 1; }
           75% { transform: scale(1.08); opacity: 0.9; }
           100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes bounce {
+          0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+          40% { transform: translateY(-8px); }
+          60% { transform: translateY(-4px); }
+        }
+        @keyframes ripple {
+          0% { transform: scale(0); opacity: 1; }
+          100% { transform: scale(4); opacity: 0; }
+        }
+        .bounce-emoji {
+          animation: bounce 3s infinite;
+          animation-play-state: running;
+        }
+        .bounce-emoji:hover {
+          animation-play-state: paused;
+        }
+        .ripple-effect {
+          position: relative;
+          overflow: hidden;
+        }
+        .ripple-effect::before {
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 0;
+          height: 0;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.3);
+          transform: translate(-50%, -50%);
+          animation: ripple 0.6s ease-out;
         }
       `}</style>
       
@@ -160,30 +222,45 @@ export default function HomePage() {
       </div>
 
       {/* Preview Card */}
-      <div style={{ 
-        margin: '0 auto 2rem',
-        maxWidth: '320px',
-        background: '#f8f9fa',
-        borderRadius: '16px',
-        padding: '12px',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-        animation: cardAnimated ? 'pulse 0.4s ease-in-out' : 'none',
-        transform: cardAnimated ? 'scale(1.02)' : 'scale(1)',
-        transition: 'all 0.3s ease'
-      }}>
+      <div 
+        className={`ripple-effect ${showRipple ? 'ripple-effect' : ''}`}
+        style={{ 
+          margin: '0 auto 2rem',
+          maxWidth: '320px',
+          background: `linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)`,
+          borderRadius: '16px',
+          padding: '12px',
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+          animation: cardAnimated ? 'pulse 0.4s ease-in-out' : 'none',
+          transform: cardAnimated ? 'scale(1.02)' : 'scale(1)',
+          transition: 'all 0.3s ease',
+          cursor: 'pointer',
+          position: 'relative',
+          overflow: 'hidden'
+        }}
+        onTouchStart={handleCardTouch}
+        onClick={handleCardTouch}
+      >
         <div style={{
           background: 'white',
           borderRadius: '12px',
           padding: '16px',
-          border: '1px solid #e5e7eb'
+          border: '1px solid #e5e7eb',
+          position: 'relative',
+          zIndex: 1
         }}>
           <div style={{ 
             fontSize: '16px', 
             fontWeight: '600', 
             color: '#1f2937',
-            marginBottom: '8px'
+            marginBottom: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px'
           }}>
-            ☕ Coffee hang?
+            <span className="bounce-emoji">☕</span>
+            <span>Coffee hang?</span>
           </div>
           <div style={{ 
             fontSize: '14px', 
@@ -197,14 +274,16 @@ export default function HomePage() {
             color: '#6b7280',
             marginBottom: '4px'
           }}>
-            from Sarah
+            Sarah would love to see you at Coffee hang
           </div>
         </div>
         <div style={{ 
           textAlign: 'center', 
           marginTop: '8px',
           fontSize: '12px',
-          color: '#9ca3af'
+          color: '#9ca3af',
+          position: 'relative',
+          zIndex: 1
         }}>
           Tap to RSVP.
         </div>

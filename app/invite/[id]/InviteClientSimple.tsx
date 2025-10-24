@@ -3,6 +3,38 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 
+// Add styles for animations
+const styles = `
+  @keyframes bounce {
+    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-8px); }
+    60% { transform: translateY(-4px); }
+  }
+  @keyframes ripple {
+    0% { transform: scale(0); opacity: 1; }
+    100% { transform: scale(4); opacity: 0; }
+  }
+  .bounce-emoji {
+    animation: bounce 2s infinite;
+  }
+  .ripple-effect {
+    position: relative;
+    overflow: hidden;
+  }
+  .ripple-effect::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    animation: ripple 0.6s ease-out;
+  }
+`;
+
 function formatTimeNicely(startISO: string, endISO: string): string {
   const start = new Date(startISO);
   const end = new Date(endISO);
@@ -65,6 +97,79 @@ function formatNamesList(names: string[]): string {
   return `${names[0]}, ${names[1]}, and ${names.length - 2} more are`;
 }
 
+// Emoji detection function (same as creation preview)
+function detectEmojiFromTitle(title: string): string {
+  const lowerTitle = title.toLowerCase();
+  
+  // Check for work context
+  const workContextKeywords = ['office', 'work', 'meeting', 'coworker', 'colleague', 'team', 'project', 'conference'];
+  const isWorkContext = workContextKeywords.some(keyword => lowerTitle.includes(keyword));
+  
+  // Comprehensive emoji mappings
+  const EMOJI_MAPPINGS = [
+    // Sports & Fitness
+    { keywords: ['table tennis', 'ping pong'], emoji: '🏓' },
+    { keywords: ['tennis'], emoji: '🎾' },
+    { keywords: ['gym', 'gymnasium', 'workout', 'work out', 'exercising', 'exercise'], emoji: '💪' },
+    { keywords: ['running', 'run', 'jog', 'jogging', 'marathon'], emoji: '🏃' },
+    { keywords: ['hiking', 'hike', 'trail'], emoji: '🥾' },
+    { keywords: ['swimming', 'swim', 'pool'], emoji: '🏊' },
+    { keywords: ['basketball', 'hoops'], emoji: '🏀' },
+    { keywords: ['football', 'soccer', 'futbol'], emoji: '⚽' },
+    { keywords: ['cycling', 'bike', 'biking', 'bicycle'], emoji: '🚴' },
+    { keywords: ['yoga', 'meditation'], emoji: '🧘' },
+    { keywords: ['golf', 'golfing'], emoji: '⛳' },
+    { keywords: ['climbing', 'rock climbing', 'bouldering'], emoji: '🧗' },
+
+    // Food & Drinks (with work context override)
+    { keywords: ['coffee', 'cafe', 'latte', 'espresso', 'cappuccino'], emoji: '☕' },
+    { keywords: ['dinner', 'dining'], emoji: '🍽️' },
+    { keywords: ['lunch'], emoji: '🥪', workContext: '🥗' }, // Different emoji for work lunch
+    { keywords: ['brunch', 'breakfast'], emoji: '🥞' },
+    { keywords: ['drinks', 'cocktails', 'cocktail', 'bar', 'happy hour'], emoji: '🍸' },
+    { keywords: ['beer', 'brewery', 'brewing'], emoji: '🍺' },
+    { keywords: ['wine', 'winery', 'tasting'], emoji: '🍷' },
+    { keywords: ['pizza'], emoji: '🍕' },
+    { keywords: ['sushi'], emoji: '🍣' },
+    { keywords: ['ice cream', 'dessert'], emoji: '🍦' },
+    { keywords: ['cake', 'birthday cake'], emoji: '🎂' },
+
+    // Entertainment
+    { keywords: ['movie', 'cinema', 'film', 'movies', 'movie night'], emoji: '🎬' },
+    { keywords: ['concert', 'music', 'live music', 'gig', 'show'], emoji: '🎵' },
+    { keywords: ['party', 'celebration'], emoji: '🎉' },
+    { keywords: ['game', 'gaming', 'board game', 'video game'], emoji: '🎮' },
+    { keywords: ['theater', 'theatre', 'play', 'drama'], emoji: '🎭' },
+    { keywords: ['museum', 'exhibition', 'gallery'], emoji: '🏛️' },
+    { keywords: ['book', 'reading', 'book club'], emoji: '📚' },
+
+    // Social & Activities
+    { keywords: ['walk', 'walking', 'stroll'], emoji: '🚶' },
+    { keywords: ['park', 'outdoor', 'picnic'], emoji: '🌳' },
+    { keywords: ['beach', 'ocean', 'sea'], emoji: '🏖️' },
+    { keywords: ['shopping', 'mall', 'store'], emoji: '🛍️' },
+    { keywords: ['spa', 'massage', 'relaxation'], emoji: '🧖' },
+    { keywords: ['travel', 'trip', 'vacation'], emoji: '✈️' },
+    { keywords: ['study', 'learning', 'class'], emoji: '📖' },
+    { keywords: ['work', 'office', 'meeting'], emoji: '💼' },
+  ];
+  
+  // Find matching emoji
+  for (const mapping of EMOJI_MAPPINGS) {
+    for (const keyword of mapping.keywords) {
+      if (lowerTitle.includes(keyword.toLowerCase())) {
+        // Use work context emoji if available and in work context
+        if (isWorkContext && mapping.workContext) {
+          return mapping.workContext;
+        }
+        return mapping.emoji;
+      }
+    }
+  }
+  
+  return '📅'; // Default calendar emoji
+}
+
 export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
   const [state, setState] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -91,6 +196,24 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
   const [guestName, setGuestName] = useState('');
   const [guestEmail, setGuestEmail] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  const [showRipple, setShowRipple] = useState(false);
+
+  const handleCardTouch = () => {
+    // Trigger ripple effect
+    setShowRipple(true);
+    
+    // Trigger haptic feedback (if supported and in secure context)
+    if (typeof navigator !== 'undefined' && navigator.vibrate && window.isSecureContext) {
+      try {
+        navigator.vibrate(50); // 50ms vibration
+      } catch (e) {
+        // Ignore vibration errors
+      }
+    }
+    
+    // Reset ripple after animation
+    setTimeout(() => setShowRipple(false), 600);
+  };
 
   // Check if user is logged in
   useEffect(() => {
@@ -294,50 +417,59 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
   }
 
   return (
-    <main className="mx-auto w-full max-w-2xl px-4 py-8">
+    <>
+      <style dangerouslySetInnerHTML={{ __html: styles }} />
+      <main className="mx-auto w-full max-w-2xl px-4 py-8">
       <div className="space-y-6">
         {/* Invite Card */}
-        <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-6 shadow-lg backdrop-blur-sm">
+        <div 
+          className={`ripple-effect ${showRipple ? 'ripple-effect' : ''} relative overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-6 shadow-lg backdrop-blur-sm cursor-pointer`}
+          onTouchStart={handleCardTouch}
+          onClick={handleCardTouch}
+        >
           {/* Subtle decorative pattern */}
           <div className="absolute inset-0 bg-gradient-to-br from-blue-100/10 via-transparent to-purple-100/10"></div>
           
           <div className="relative space-y-4 text-center">
             {/* Title with emoji */}
             <div className="space-y-2">
-              <h1 className="text-3xl font-bold text-slate-900">
-                {invite.title}
-              </h1>
+              <div className="text-center">
+                <div className="bounce-emoji text-5xl mb-4">
+                  {detectEmojiFromTitle(invite.title)}
+                </div>
+                <h1 className="text-3xl font-bold text-slate-900 flex flex-col items-center gap-2">
+                  {invite.host_name ? (
+                    <>
+                      <div className="text-lg font-medium text-slate-600">{invite.host_name} would love to see you at</div>
+                      <div className="text-3xl font-bold">{invite.title.replace(/^[^\w\s]*\s*/, '')}</div>
+                    </>
+                  ) : (
+                    invite.title
+                  )}
+                </h1>
+              </div>
               <p className="text-lg text-slate-600">
                 {formatTimeNicely(invite.window_start, invite.window_end)}
               </p>
-              {invite.host_name && (
-                <p className="text-slate-500">
-                  from {invite.host_name}
-                </p>
-              )}
             </div>
             
             {/* RSVP Counts */}
             {(rsvpCounts.join > 0 || rsvpCounts.maybe > 0 || rsvpCounts.decline > 0) && (
-              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <div className="rounded-xl border border-blue-200/50 bg-blue-50/50 px-4 py-3 backdrop-blur-sm">
                 <div className="flex flex-wrap justify-center gap-4 text-sm">
                   {rsvpCounts.join > 0 && (
-                    <span className="font-medium text-green-600">
+                    <span className="font-medium text-green-700">
                       👥 {formatNamesList(rsvpNames.join)} in
                     </span>
                   )}
                   {rsvpCounts.maybe > 0 && (
-                    <span className="font-medium text-amber-600">
+                    <span className="font-medium text-amber-700">
                       {formatNamesList(rsvpNames.maybe)} maybe
                     </span>
                   )}
                 </div>
               </div>
             )}
-            
-            <p className="text-sm text-slate-500 italic">
-              About to do something? See who can make it.
-            </p>
           </div>
         </div>
 
@@ -435,5 +567,6 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
         )}
       </div>
     </main>
+    </>
   );
 }
