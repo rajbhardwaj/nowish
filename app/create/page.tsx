@@ -13,6 +13,7 @@ type Parsed = {
   end: Date | null;
   whenText: string | null;
   emoji: string | null;
+  timeMovedToTomorrow: boolean;
 };
 
 const supabase = createClient(
