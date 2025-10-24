@@ -269,7 +269,6 @@ export default function CreateInvitePage() {
   const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null);
   const [emojiManuallyRemoved, setEmojiManuallyRemoved] = useState(false);
   const [currentTipIndex, setCurrentTipIndex] = useState(0);
-  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
 
   const rotatingTips = [
     'Try "Coffee at 3pm today"',
@@ -330,40 +329,16 @@ export default function CreateInvitePage() {
     }
   }, [input, rotatingTips.length]);
 
-  // Detect keyboard open/close on mobile
-  useEffect(() => {
-    const initialHeight = window.innerHeight;
-    
-    const handleResize = () => {
-      const currentHeight = window.innerHeight;
-      // If height decreased significantly, keyboard is likely open
-      const heightDiff = initialHeight - currentHeight;
-      setIsKeyboardOpen(heightDiff > 150); // More reliable threshold
-    };
-
-    const handleFocus = () => {
-      // Small delay to let keyboard appear
-      setTimeout(() => {
-        const currentHeight = window.innerHeight;
-        const heightDiff = initialHeight - currentHeight;
-        setIsKeyboardOpen(heightDiff > 150);
-      }, 300);
-    };
-
-    const handleBlur = () => {
-      setIsKeyboardOpen(false);
-    };
-
-    window.addEventListener('resize', handleResize);
-    window.addEventListener('focusin', handleFocus);
-    window.addEventListener('focusout', handleBlur);
-    
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('focusin', handleFocus);
-      window.removeEventListener('focusout', handleBlur);
-    };
-  }, []);
+  // Scroll to input field on mobile when focused
+  const handleInputFocus = () => {
+    // Small delay to let keyboard appear, then scroll to input
+    setTimeout(() => {
+      const inputElement = document.querySelector('input[type="text"]') as HTMLElement;
+      if (inputElement) {
+        inputElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 300);
+  };
 
   const canCreate =
     !!user &&
@@ -500,6 +475,7 @@ export default function CreateInvitePage() {
             placeholder="Type your invite here..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            onFocus={handleInputFocus}
             autoFocus
           />
 
@@ -517,39 +493,13 @@ export default function CreateInvitePage() {
             </div>
           )}
 
-          {/* Debug indicator */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="text-xs text-red-500 mb-2">
-              Keyboard: {isKeyboardOpen ? 'OPEN' : 'CLOSED'} | Height: {window.innerHeight}
-            </div>
-          )}
-
           {/* Live Preview Card */}
           {input && (
-            <div className={`mt-4 rounded-2xl border border-slate-200 bg-gradient-to-br from-blue-50 via-white to-purple-50 shadow-lg ${
-              isKeyboardOpen ? 'sticky top-4 z-50 p-4' : 'p-6'
-            }`}>
-              {isKeyboardOpen ? (
-                // Compact sticky version for mobile keyboard
-                <div className="flex items-center gap-3">
-                  <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
-                  <span className="text-sm font-medium text-slate-600">Live Preview:</span>
-                  {selectedEmoji && <span className="text-lg">{selectedEmoji}</span>}
-                  <span className="font-semibold text-slate-900">{parsed.title}</span>
-                  {parsed.start && (
-                    <span className="text-sm text-slate-600">
-                      {parsed.start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })}
-                      {parsed.end && ` - ${parsed.end.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })}`}
-                    </span>
-                  )}
-                </div>
-              ) : (
-                // Full preview version for desktop
-                <>
-                  <div className="mb-3 flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
-                    <span className="text-sm font-medium text-slate-600">Live Preview</span>
-                  </div>
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6 shadow-lg">
+              <div className="mb-3 flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
+                <span className="text-sm font-medium text-slate-600">Live Preview</span>
+              </div>
               
               <div className="space-y-3">
                 {/* Title */}
@@ -635,8 +585,6 @@ export default function CreateInvitePage() {
                 )}
 
               </div>
-                </>
-              )}
             </div>
           )}
         </div>
