@@ -123,7 +123,7 @@ export async function GET(_req: NextRequest, context: { params: Promise<{ id: st
           }}
         >
           <div style={{ fontSize: 30, opacity: 0.9 }}>Tap to RSVP →</div>
-          <div style={{ fontSize: 28, opacity: 0.7 }}>nowish.vercel.app</div>
+          <div style={{ fontSize: 28, opacity: 0.7 }}>{process.env.NEXT_PUBLIC_SITE_URL?.replace('https://', '') || 'nowish.rsvp'}</div>
         </div>
       </div>
     ),
