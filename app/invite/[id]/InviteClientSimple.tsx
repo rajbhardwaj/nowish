@@ -269,7 +269,7 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
                 <div className="flex flex-wrap justify-center gap-4 text-sm">
                   {rsvpCounts.join > 0 && (
                     <span className="font-medium text-green-600">
-                      {rsvpCounts.join} {rsvpCounts.join === 1 ? 'person is' : 'people are'} in
+                      👥 {rsvpCounts.join} {rsvpCounts.join === 1 ? 'person is' : 'people are'} in
                     </span>
                   )}
                   {rsvpCounts.maybe > 0 && (

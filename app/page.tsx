@@ -157,31 +157,6 @@ export default function HomePage() {
           border: '1px solid #e5e7eb'
         }}>
           <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '8px',
-            marginBottom: '12px'
-          }}>
-            <div style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              fontSize: '14px',
-              fontWeight: '600'
-            }}>
-              N
-            </div>
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937' }}>Nowish</div>
-              <div style={{ fontSize: '12px', color: '#6b7280' }}>nowish.app</div>
-            </div>
-          </div>
-          <div style={{ 
             fontSize: '16px', 
             fontWeight: '600', 
             color: '#1f2937',
@@ -204,14 +179,11 @@ export default function HomePage() {
             from Sarah
           </div>
           <div style={{ 
-            display: 'flex', 
-            gap: '8px',
             fontSize: '12px',
-            color: '#6b7280'
+            color: '#6b7280',
+            fontStyle: 'italic'
           }}>
-            <span>👥 3 people are in</span>
-            <span>•</span>
-            <span>Tap to RSVP</span>
+            Built for the moment — to see who&apos;s in.
           </div>
         </div>
         <div style={{ 
@@ -289,24 +261,6 @@ export default function HomePage() {
           <div>You&apos;ll share a link. Friends don&apos;t need an account.</div>
         </div>
         
-        <div style={{ 
-          textAlign: 'center',
-          marginTop: '12px'
-        }}>
-          <button
-            onClick={() => window.open('/invite/demo', '_blank')}
-            style={{
-              color: '#6b7280',
-              textDecoration: 'underline',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: '0.8rem'
-            }}
-          >
-            See a sample invite →
-          </button>
-        </div>
 
         {email && (
           <button
@@ -402,7 +356,7 @@ export default function HomePage() {
           fontSize: '0.75rem',
           color: '#9ca3af'
         }}>
-          No contacts upload. We never message your friends.
+          No contacts upload. We won&apos;t text anyone unless they opt in.
         </div>
       </div>
       </main>
