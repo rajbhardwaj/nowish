@@ -332,15 +332,37 @@ export default function CreateInvitePage() {
 
   // Detect keyboard open/close on mobile
   useEffect(() => {
+    let initialHeight = window.innerHeight;
+    
     const handleResize = () => {
-      const initialHeight = window.innerHeight;
       const currentHeight = window.innerHeight;
       // If height decreased significantly, keyboard is likely open
-      setIsKeyboardOpen(currentHeight < initialHeight * 0.75);
+      const heightDiff = initialHeight - currentHeight;
+      setIsKeyboardOpen(heightDiff > 150); // More reliable threshold
+    };
+
+    const handleFocus = () => {
+      // Small delay to let keyboard appear
+      setTimeout(() => {
+        const currentHeight = window.innerHeight;
+        const heightDiff = initialHeight - currentHeight;
+        setIsKeyboardOpen(heightDiff > 150);
+      }, 300);
+    };
+
+    const handleBlur = () => {
+      setIsKeyboardOpen(false);
     };
 
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener('focusin', handleFocus);
+    window.addEventListener('focusout', handleBlur);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('focusin', handleFocus);
+      window.removeEventListener('focusout', handleBlur);
+    };
   }, []);
 
   const canCreate =
@@ -492,6 +514,13 @@ export default function CreateInvitePage() {
           {!input && (
             <div className="mt-2 text-sm text-slate-500 transition-opacity duration-500">
               💡 {rotatingTips[currentTipIndex]}
+            </div>
+          )}
+
+          {/* Debug indicator */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="text-xs text-red-500 mb-2">
+              Keyboard: {isKeyboardOpen ? 'OPEN' : 'CLOSED'} | Height: {window.innerHeight}
             </div>
           )}
 
