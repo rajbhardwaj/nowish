@@ -74,8 +74,7 @@ export default function MyInvitesPage() {
         .from('profiles')
         .upsert({ 
           id: user.id, 
-          display_name: displayName.trim(),
-          email: user.email 
+          display_name: displayName.trim()
         });
       
       if (error) {
@@ -146,28 +145,30 @@ export default function MyInvitesPage() {
               <p className="text-sm text-slate-600">This is how your name appears on invites</p>
               
               {editingName ? (
-                <div className="mt-3 flex items-center gap-3">
+                <div className="mt-3 space-y-3">
                   <input
                     type="text"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
-                    className="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
                     placeholder="Enter your display name"
                     maxLength={50}
                   />
-                  <button
-                    onClick={saveDisplayName}
-                    disabled={savingName || !displayName.trim()}
-                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
-                  >
-                    {savingName ? 'Saving...' : 'Save'}
-                  </button>
-                  <button
-                    onClick={() => setEditingName(false)}
-                    className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500/20"
-                  >
-                    Cancel
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={saveDisplayName}
+                      disabled={savingName || !displayName.trim()}
+                      className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
+                    >
+                      {savingName ? 'Saving...' : 'Save'}
+                    </button>
+                    <button
+                      onClick={() => setEditingName(false)}
+                      className="flex-1 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500/20"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="mt-3 flex items-center gap-3">
