@@ -70,7 +70,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     description: `${when} • Come if you're free ✨`,
     openGraph: {
       type: 'website',
-      title: personalTitle,
+      title: 'Tap to RSVP',
       description: `${when} • Come if you're free ✨`,
       url: `${base}/invite/${id}`,
       siteName: 'Nowish',
@@ -86,7 +86,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     },
     twitter: {
       card: 'summary_large_image',
-      title: personalTitle,
+      title: 'Tap to RSVP',
       description: `${when} • Come if you're free ✨`,
       images: [ogUrl],
     },
