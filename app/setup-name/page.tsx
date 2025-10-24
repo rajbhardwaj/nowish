@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 
-export default function SetupNamePage() {
+function SetupNameInner() {
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
   const searchParams = useSearchParams();
@@ -88,5 +88,19 @@ export default function SetupNamePage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function SetupNamePage() {
+  return (
+    <Suspense fallback={
+      <main className="mx-auto w-full max-w-2xl px-4 py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-slate-500">Loading...</div>
+        </div>
+      </main>
+    }>
+      <SetupNameInner />
+    </Suspense>
   );
 }
