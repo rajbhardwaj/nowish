@@ -21,10 +21,32 @@ function formatTimeNicely(startISO: string, endISO: string): string {
   const startTime = start.toLocaleTimeString(undefined, timeOptions);
   const endTime = end.toLocaleTimeString(undefined, timeOptions);
   
+  // Format times according to style guide
+  const formatTime = (time: string) => {
+    // Remove :00 minutes
+    return time.replace(':00', '');
+  };
+  
+  const startFormatted = formatTime(startTime);
+  const endFormatted = formatTime(endTime);
+  
+  // Check if same meridiem
+  const startMeridiem = startTime.includes('AM') ? 'AM' : 'PM';
+  const endMeridiem = endTime.includes('AM') ? 'AM' : 'PM';
+  const sameMeridiem = startMeridiem === endMeridiem;
+  
   if (isToday) {
-    return `Today at ${startTime} to ${endTime}`;
+    if (sameMeridiem) {
+      return `Today, ${startFormatted}–${endFormatted}`;
+    } else {
+      return `Today, ${startFormatted}–${endFormatted}`;
+    }
   } else if (isTomorrow) {
-    return `Tomorrow at ${startTime} to ${endTime}`;
+    if (sameMeridiem) {
+      return `Tomorrow, ${startFormatted}–${endFormatted}`;
+    } else {
+      return `Tomorrow, ${startFormatted}–${endFormatted}`;
+    }
   } else {
     // For other days, show day and time
     const dayOptions: Intl.DateTimeFormatOptions = {
@@ -35,7 +57,7 @@ function formatTimeNicely(startISO: string, endISO: string): string {
     };
     const startFormatted = start.toLocaleString(undefined, dayOptions);
     const endFormatted = end.toLocaleTimeString(undefined, timeOptions);
-    return `${startFormatted} to ${endFormatted}`;
+    return `${startFormatted}–${endFormatted}`;
   }
 }
 

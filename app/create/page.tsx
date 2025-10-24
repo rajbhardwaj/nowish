@@ -131,20 +131,35 @@ function formatTimeDisplay(date: Date): string {
 function formatPreview(p: Parsed): string {
   if (!p.title) return 'add a title';
   if (!p.start) return p.title;
+  
   const opts: Intl.DateTimeFormatOptions = {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
+    hour12: true
   };
+  
   const start = new Intl.DateTimeFormat(undefined, opts).format(p.start);
   if (!p.end) return `${p.title} — ${start}`;
+  
   const end = new Intl.DateTimeFormat(undefined, {
     hour: 'numeric',
     minute: '2-digit',
+    hour12: true
   }).format(p.end);
-  return `${p.title} — ${start} to ${end}`;
+  
+  // Format according to style guide
+  const formatTime = (time: string) => {
+    // Remove :00 minutes and handle meridiem
+    return time.replace(':00', '').replace(' AM', ' AM').replace(' PM', ' PM');
+  };
+  
+  const startFormatted = formatTime(start);
+  const endFormatted = formatTime(end);
+  
+  return `${p.title} — ${startFormatted}–${endFormatted}`;
 }
 
 function detectEmoji(input: string): string | null {

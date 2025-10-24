@@ -177,7 +177,7 @@ export default function HomePage() {
             color: '#6b7280',
             marginBottom: '8px'
           }}>
-            Today at 3:00 PM to 5:00 PM
+            Today, 3–5 PM
           </div>
           <div style={{ 
             fontSize: '12px', 
