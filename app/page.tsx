@@ -144,17 +144,6 @@ export default function HomePage() {
           Nowish is for spontaneous hangs.<br />
           Text it like you normally would; we make it look good.
         </p>
-        
-        {totalInvites !== null && (
-          <p style={{ 
-            fontSize: '0.9rem',
-            color: '#6b7280',
-            margin: '0 0 1.5rem',
-            fontWeight: '500'
-          }}>
-            {totalInvites} invites created so far
-          </p>
-        )}
       </div>
 
       {/* Preview Card */}
@@ -370,7 +359,7 @@ export default function HomePage() {
         </div>
         
         {/* Trust Microcopy */}
-        <div style={{ 
+        <div style={{
           textAlign: 'center',
           marginTop: '2rem',
           fontSize: '0.75rem',
@@ -378,6 +367,18 @@ export default function HomePage() {
         }}>
           No contacts upload. We won&apos;t text anyone unless they opt in.
         </div>
+        
+        {/* Social Proof Counter */}
+        {totalInvites !== null && (
+          <div style={{
+            textAlign: 'center',
+            marginTop: '1rem',
+            fontSize: '0.7rem',
+            color: '#9ca3af'
+          }}>
+            {totalInvites} invites created so far
+          </div>
+        )}
       </div>
       </main>
     </>
