@@ -133,7 +133,7 @@ export default function HomePage() {
           margin: '0 0 0.5rem',
           fontWeight: '500'
         }}>
-          Built for the moment — to see who&apos;s in.
+          About to do something? See who can make it.
         </p>
         <p style={{ 
           fontSize: '1rem',
@@ -191,7 +191,7 @@ export default function HomePage() {
             color: '#6b7280',
             fontStyle: 'italic'
           }}>
-            Built for the moment — to see who&apos;s in.
+            About to do something? See who can make it.
           </div>
         </div>
         <div style={{ 

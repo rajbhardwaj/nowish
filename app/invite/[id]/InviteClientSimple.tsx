@@ -318,7 +318,7 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
             )}
             
             <p className="text-sm text-slate-500 italic">
-              Built for the moment — to see who&apos;s in.
+              About to do something? See who can make it.
             </p>
           </div>
         </div>
