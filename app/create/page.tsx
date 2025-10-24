@@ -506,8 +506,28 @@ export default function CreateInvitePage() {
     window.location.href = '/';
   }
 
+  const styles = `
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+      }
+      40% {
+        transform: translateY(-10px);
+      }
+      60% {
+        transform: translateY(-5px);
+      }
+    }
+    
+    .bounce-emoji {
+      animation: bounce 2s ease-in-out;
+    }
+  `;
+
   return (
-    <div className="space-y-6">
+    <>
+      <style dangerouslySetInnerHTML={{ __html: styles }} />
+      <div className="space-y-6">
       {/* signed in banner */}
       {user ? (
         <div className="rounded-xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 shadow-sm flex items-center justify-between">
@@ -573,44 +593,50 @@ export default function CreateInvitePage() {
 
           {/* Live Preview Card */}
           {input && (
-            <div id="live-preview-card" className="mt-4 rounded-2xl border border-slate-200 bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6 shadow-lg">
+            <div id="live-preview-card" className="mt-4 rounded-2xl border border-slate-200 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-6 shadow-lg backdrop-blur-sm">
               <div className="mb-3 flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
                 <span className="text-sm font-medium text-slate-600">Live Preview</span>
               </div>
               
-              <div className="space-y-3">
-                {/* Title */}
+              {/* Subtle decorative pattern */}
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-100/10 via-transparent to-purple-100/10 rounded-2xl"></div>
+              
+              <div className="relative space-y-4 text-center">
+                {/* Title with emoji */}
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2">
+                  <div className="text-center">
                     {selectedEmoji && (
-                      <span className="text-xl">{selectedEmoji}</span>
+                      <div className="bounce-emoji text-5xl mb-4">
+                        {selectedEmoji}
+                      </div>
                     )}
-                    <div className="text-lg font-semibold text-slate-900">
+                    <h1 className="text-3xl font-bold text-slate-900 flex flex-col items-center gap-2">
                       {parsed.title ? (
-                        <span>
-                          {hostName || 'A friend'} would love to see you at {parsed.title}
-                        </span>
+                        <>
+                          <div className="text-lg font-medium text-slate-600">{hostName || 'A friend'} would love to see you at</div>
+                          <div className="text-3xl font-bold">{parsed.title}</div>
+                        </>
                       ) : (
                         'What are you doing?'
                       )}
-                    </div>
+                    </h1>
                   </div>
                   {parsed.title && (
-                    <div className="flex items-center gap-2 mb-3">
+                    <div className="flex items-center justify-center gap-2 mb-3">
                       <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">
                         {detectedCircle}
                       </span>
-        <span className="text-sm text-slate-600">
-          Come if you&apos;re free ✨
-        </span>
+                      <span className="text-sm text-slate-600">
+                        Come if you&apos;re free ✨
+                      </span>
                     </div>
                   )}
                 </div>
 
                 {/* Emoji Control */}
                 {parsed.emoji && (
-                  <div className="flex items-center gap-2 text-sm">
+                  <div className="flex items-center justify-center gap-2 text-sm">
                     {selectedEmoji ? (
                       <div className="flex items-center gap-2">
                         <span className="text-slate-500">Nowish guessed {selectedEmoji} for this</span>
@@ -643,7 +669,7 @@ export default function CreateInvitePage() {
 
                 {/* Time */}
                 {parsed.start ? (
-                  <div className="flex items-center gap-2 text-slate-600">
+                  <div className="flex items-center justify-center gap-2 text-slate-600">
                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -773,5 +799,6 @@ export default function CreateInvitePage() {
       </div>
 
     </div>
+    </>
   );
 }
