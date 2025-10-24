@@ -111,11 +111,12 @@ function detectEmojiFromTitle(title: string): string {
     { keywords: ['table tennis', 'ping pong'], emoji: '🏓' },
     { keywords: ['tennis'], emoji: '🎾' },
     { keywords: ['gym', 'gymnasium', 'workout', 'work out', 'exercising', 'exercise'], emoji: '💪' },
-    { keywords: ['running', 'jog', 'jogging', 'marathon'], emoji: '🏃' },
+    { keywords: ['running', 'run', 'jog', 'jogging', 'marathon'], emoji: '🏃' },
     { keywords: ['hiking', 'hike', 'trail'], emoji: '🥾' },
     { keywords: ['swimming', 'swim', 'pool'], emoji: '🏊' },
-    { keywords: ['basketball', 'hoops'], emoji: '🏀' },
-    { keywords: ['football', 'soccer', 'futbol'], emoji: '⚽' },
+    { keywords: ['basketball', 'hoops', 'lakers', 'warriors', 'celtics', 'heat', 'bulls', 'knicks', 'nets', '76ers', 'bucks', 'suns', 'nuggets', 'mavericks', 'clippers', 'spurs'], emoji: '🏀' },
+    { keywords: ['football', 'chiefs', 'cowboys', 'patriots', 'packers', 'steelers', '49ers', 'bills', 'dolphins', 'ravens', 'bengals', 'eagles', 'giants', 'jets', 'bears', 'lions'], emoji: '🏈' },
+    { keywords: ['soccer', 'futbol'], emoji: '⚽' },
     { keywords: ['cycling', 'bike', 'biking', 'bicycle'], emoji: '🚴' },
     { keywords: ['yoga', 'meditation'], emoji: '🧘' },
     { keywords: ['golf', 'golfing'], emoji: '⛳' },
@@ -154,10 +155,16 @@ function detectEmojiFromTitle(title: string): string {
     { keywords: ['work', 'office', 'meeting'], emoji: '💼' },
   ];
   
-  // Find matching emoji
+  // Find matching emoji with word boundary matching
   for (const mapping of EMOJI_MAPPINGS) {
     for (const keyword of mapping.keywords) {
-      if (lowerTitle.includes(keyword.toLowerCase())) {
+      const lowerKeyword = keyword.toLowerCase();
+      // Use word boundaries for single words, or exact phrase matching for multi-word phrases
+      const regex = lowerKeyword.includes(' ') 
+        ? new RegExp(`\\b${lowerKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`)
+        : new RegExp(`\\b${lowerKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`);
+      
+      if (regex.test(lowerTitle)) {
         // Use work context emoji if available and in work context
         if (isWorkContext && mapping.workContext) {
           return mapping.workContext;

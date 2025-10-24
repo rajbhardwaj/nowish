@@ -26,11 +26,12 @@ const EMOJI_MAPPINGS = [
   { keywords: ['table tennis', 'ping pong'], emoji: '🏓' },
   { keywords: ['tennis'], emoji: '🎾' },
   { keywords: ['gym', 'gymnasium', 'workout', 'work out', 'exercising', 'exercise'], emoji: '💪' },
-  { keywords: ['running', 'jog', 'jogging', 'marathon'], emoji: '🏃' },
+  { keywords: ['running', 'run', 'jog', 'jogging', 'marathon'], emoji: '🏃' },
   { keywords: ['hiking', 'hike', 'trail'], emoji: '🥾' },
   { keywords: ['swimming', 'swim', 'pool'], emoji: '🏊' },
-  { keywords: ['basketball', 'hoops'], emoji: '🏀' },
-  { keywords: ['football', 'soccer', 'futbol'], emoji: '⚽' },
+  { keywords: ['basketball', 'hoops', 'lakers', 'warriors', 'celtics', 'heat', 'bulls', 'knicks', 'nets', '76ers', 'bucks', 'suns', 'nuggets', 'mavericks', 'clippers', 'spurs'], emoji: '🏀' },
+  { keywords: ['football', 'chiefs', 'cowboys', 'patriots', 'packers', 'steelers', '49ers', 'bills', 'dolphins', 'ravens', 'bengals', 'eagles', 'giants', 'jets', 'bears', 'lions'], emoji: '🏈' },
+  { keywords: ['soccer', 'futbol'], emoji: '⚽' },
   { keywords: ['cycling', 'bike', 'biking', 'bicycle'], emoji: '🚴' },
   { keywords: ['yoga', 'meditation'], emoji: '🧘' },
   { keywords: ['golf', 'golfing'], emoji: '⛳' },
@@ -178,10 +179,16 @@ function detectEmoji(input: string): string | null {
   const workContextKeywords = ['office', 'work', 'meeting', 'coworker', 'colleague', 'team', 'project', 'conference'];
   const isWorkContext = workContextKeywords.some(keyword => lowerInput.includes(keyword));
   
-  // Find matching emoji
+  // Find matching emoji with word boundary matching
   for (const mapping of EMOJI_MAPPINGS) {
     for (const keyword of mapping.keywords) {
-      if (lowerInput.includes(keyword.toLowerCase())) {
+      const lowerKeyword = keyword.toLowerCase();
+      // Use word boundaries for single words, or exact phrase matching for multi-word phrases
+      const regex = lowerKeyword.includes(' ') 
+        ? new RegExp(`\\b${lowerKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`)
+        : new RegExp(`\\b${lowerKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`);
+      
+      if (regex.test(lowerInput)) {
         // Use work context emoji if available and in work context
         if (isWorkContext && mapping.workContext) {
           return mapping.workContext;
@@ -294,6 +301,32 @@ function detectCircle(input: string): Circle {
   // Detect emoji
   const emoji = detectEmoji(input);
 
+  // Smart sports duration detection
+  if (start && end) {
+    const lowerTitle = title.toLowerCase();
+    
+    // Check if this is the default 1-hour duration (60 minutes)
+    const isDefaultDuration = end.getTime() - start.getTime() === 60 * 60 * 1000;
+    
+    if (isDefaultDuration) {
+      // NFL teams - 3 hours duration
+      const nflTeams = ['chiefs', 'cowboys', 'patriots', 'packers', 'steelers', '49ers', 'bills', 'dolphins', 'ravens', 'bengals', 'eagles', 'giants', 'jets', 'bears', 'lions'];
+      const isNFL = nflTeams.some(team => lowerTitle.includes(team));
+      
+      // NBA teams - 2.5 hours duration  
+      const nbaTeams = ['lakers', 'warriors', 'celtics', 'heat', 'bulls', 'knicks', 'nets', '76ers', 'bucks', 'suns', 'nuggets', 'mavericks', 'clippers', 'spurs'];
+      const isNBA = nbaTeams.some(team => lowerTitle.includes(team));
+      
+      if (isNFL) {
+        // NFL games are typically 3 hours
+        end = new Date(start.getTime() + 3 * 60 * 60 * 1000);
+      } else if (isNBA) {
+        // NBA games are typically 2.5 hours
+        end = new Date(start.getTime() + 2.5 * 60 * 60 * 1000);
+      }
+    }
+  }
+
   return {
     title,
     start,
@@ -316,14 +349,16 @@ export default function CreateInvitePage() {
   const [emojiManuallyRemoved, setEmojiManuallyRemoved] = useState(false);
   const [currentTipIndex, setCurrentTipIndex] = useState(0);
   const [circleManuallyChanged, setCircleManuallyChanged] = useState(false);
+  const [hasEditedAfterCreation, setHasEditedAfterCreation] = useState(false);
+  const [baselineState, setBaselineState] = useState<{input: string, hostName: string, circle: Circle} | null>(null);
 
   const rotatingTips = [
     'Try "Coffee at 3pm today"',
     'Try "Dinner tomorrow at 7:30pm"',
     'Try "Park with kids, 3-5p"',
     'Try "Movie night Friday 8p-10p"',
-    'Try "Brunch Sunday morning"',
-    'Try "Drinks after work"'
+    'Try "Brunch Sunday 10am"',
+    'Try "Drinks after work 6pm"'
   ];
 
   // auth
@@ -387,6 +422,21 @@ export default function CreateInvitePage() {
       return () => clearInterval(interval);
     }
   }, [input, rotatingTips.length]);
+
+  // Detect if user has edited after creating an invite
+  useEffect(() => {
+    if (link && baselineState && !hasEditedAfterCreation) {
+      const hasChanged = 
+        input !== baselineState.input || 
+        hostName !== baselineState.hostName || 
+        circle !== baselineState.circle;
+      
+      if (hasChanged) {
+        setHasEditedAfterCreation(true);
+        setLink(null); // Clear the link since they're creating a new invite
+      }
+    }
+  }, [input, hostName, circle, link, baselineState, hasEditedAfterCreation]);
 
   // Scroll to show input and preview when tapped on mobile
   const handleInputFocus = () => {
@@ -465,6 +515,8 @@ export default function CreateInvitePage() {
       const base = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://nowish.vercel.app');
       const url = `${base}/invite/${id}`;
       setLink(url);
+      setHasEditedAfterCreation(false); // Reset the flag since we have a new invite
+      setBaselineState({ input, hostName, circle }); // Set baseline state
 
       // try to share right away
       if (navigator.share) {
@@ -735,26 +787,35 @@ export default function CreateInvitePage() {
 
         {/* Actions */}
         <div className="mt-6 space-y-4">
-          <button
-            onClick={handleCreate}
-            disabled={!canCreate}
-            className={`rounded-xl px-6 py-3 font-semibold text-white shadow-lg transition-all duration-200 disabled:cursor-not-allowed ${
-              canCreate
-                ? 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 hover:shadow-xl active:scale-95'
-                : 'bg-slate-300'
-            }`}
-          >
-            {creating 
-              ? 'Creating…' 
-              : !user
-                ? 'Sign in to create invite'
-                : canCreate 
-                  ? 'Create invite' 
-                  : parsed.start 
-                    ? 'Create invite'
-                    : 'Need a time first ⏰'
-            }
-          </button>
+          {!link || hasEditedAfterCreation ? (
+            <button
+              onClick={handleCreate}
+              disabled={!canCreate}
+              className={`rounded-xl px-6 py-3 font-semibold text-white shadow-lg transition-all duration-200 disabled:cursor-not-allowed ${
+                canCreate
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 hover:shadow-xl active:scale-95'
+                  : 'bg-slate-300'
+              }`}
+            >
+              {creating 
+                ? 'Creating…' 
+                : !user
+                  ? 'Sign in to create invite'
+                  : canCreate 
+                    ? 'Create invite' 
+                    : parsed.start 
+                      ? 'Create invite'
+                      : 'Need a time first ⏰'
+              }
+            </button>
+          ) : (
+            <button
+              onClick={shareLink}
+              className="rounded-xl px-6 py-3 font-semibold text-white shadow-lg transition-all duration-200 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 hover:shadow-xl active:scale-95"
+            >
+              Share invite
+            </button>
+          )}
 
           {/* Helper text */}
           <div className="text-center text-sm text-slate-500 mt-3">
