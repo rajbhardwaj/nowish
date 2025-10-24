@@ -218,265 +218,168 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
   }, [inviteId]);
 
   if (loading) {
-    return <div style={{ marginTop: 24, textAlign: 'center' }}>Loading...</div>;
+    return (
+      <main className="mx-auto w-full max-w-2xl px-4 py-8">
+        <div className="text-center">
+          <div className="inline-flex h-8 w-8 animate-spin rounded-full border-4 border-slate-300 border-t-blue-600"></div>
+          <p className="mt-4 text-slate-600">Loading invite...</p>
+        </div>
+      </main>
+    );
   }
 
   if (!invite) {
-    return <div style={{ marginTop: 24, textAlign: 'center' }}>
-      <h1>Invite Not Found</h1>
-      <p>ID: {inviteId}</p>
-    </div>;
+    return (
+      <main className="mx-auto w-full max-w-2xl px-4 py-8">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-slate-900">Invite Not Found</h1>
+          <p className="mt-2 text-slate-600">This invite may have been deleted or doesn&apos;t exist.</p>
+        </div>
+      </main>
+    );
   }
 
   return (
-    <div style={{ marginTop: 24, textAlign: 'center' }}>
-      <div style={{ 
-        marginBottom: 32, 
-        padding: 24, 
-        background: 'linear-gradient(135deg, #dbeafe 0%, #e0e7ff 50%, #f3e8ff 100%)', 
-        borderRadius: 16, 
-        border: '1px solid #a5b4fc',
-        maxWidth: 500,
-        marginInline: 'auto',
-        boxShadow: '0 8px 25px -5px rgba(59, 130, 246, 0.2), 0 4px 6px -2px rgba(139, 92, 246, 0.1), 0 0 0 1px rgba(59, 130, 246, 0.1)'
-      }}>
-        <h1 style={{ 
-          margin: '0 0 12px', 
-          fontSize: 32, 
-          fontWeight: 700, 
-          color: '#1e293b',
-          fontFamily: 'ui-serif, Georgia, "Times New Roman", serif',
-          textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
-          letterSpacing: '-0.025em'
-        }}>
-          {invite.title}
-        </h1>
-        <p style={{ margin: '0 0 8px', fontSize: 18, color: '#495057', fontWeight: 500 }}>
-          {formatTimeNicely(invite.window_start, invite.window_end)}
-        </p>
-        {invite.host_name && (
-          <p style={{ 
-            margin: '0 0 12px', 
-            fontSize: 16, 
-            color: '#64748b',
-            fontWeight: 500,
-            fontFamily: 'system-ui, -apple-system, sans-serif'
-          }}>
-            from {invite.host_name}
-          </p>
-        )}
-        
-        {/* RSVP Counts */}
-        {(rsvpCounts.join > 0 || rsvpCounts.maybe > 0 || rsvpCounts.decline > 0) && (
-          <div style={{ 
-            margin: '0 0 12px', 
-            padding: '8px 12px', 
-            background: 'rgba(255, 255, 255, 0.7)', 
-            borderRadius: 8,
-            fontSize: 14,
-            color: '#475569'
-          }}>
-            {rsvpCounts.join > 0 && (
-              <span style={{ color: '#059669', fontWeight: 600 }}>
-                {rsvpCounts.join} {rsvpCounts.join === 1 ? 'person is' : 'people are'} in
-              </span>
+    <main className="mx-auto w-full max-w-2xl px-4 py-8">
+      <div className="space-y-6">
+        {/* Invite Card */}
+        <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-6 shadow-lg backdrop-blur-sm">
+          {/* Subtle decorative pattern */}
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-100/10 via-transparent to-purple-100/10"></div>
+          
+          <div className="relative space-y-4 text-center">
+            {/* Title with emoji */}
+            <div className="space-y-2">
+              <h1 className="text-3xl font-bold text-slate-900">
+                {invite.title}
+              </h1>
+              <p className="text-lg text-slate-600">
+                {formatTimeNicely(invite.window_start, invite.window_end)}
+              </p>
+              {invite.host_name && (
+                <p className="text-slate-500">
+                  from {invite.host_name}
+                </p>
+              )}
+            </div>
+            
+            {/* RSVP Counts */}
+            {(rsvpCounts.join > 0 || rsvpCounts.maybe > 0 || rsvpCounts.decline > 0) && (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <div className="flex flex-wrap justify-center gap-4 text-sm">
+                  {rsvpCounts.join > 0 && (
+                    <span className="font-medium text-green-600">
+                      {rsvpCounts.join} {rsvpCounts.join === 1 ? 'person is' : 'people are'} in
+                    </span>
+                  )}
+                  {rsvpCounts.maybe > 0 && (
+                    <span className="font-medium text-amber-600">
+                      {rsvpCounts.maybe} {rsvpCounts.maybe === 1 ? 'person is' : 'people are'} maybe
+                    </span>
+                  )}
+                </div>
+              </div>
             )}
-            {rsvpCounts.join > 0 && rsvpCounts.maybe > 0 && <span> • </span>}
-            {rsvpCounts.maybe > 0 && (
-              <span style={{ color: '#d97706', fontWeight: 600 }}>
-                {rsvpCounts.maybe} {rsvpCounts.maybe === 1 ? 'person is' : 'people are'} maybe
-              </span>
-            )}
-          </div>
-        )}
-        
-        <p style={{ 
-          margin: 0, 
-          fontSize: 14, 
-          color: '#64748b', 
-          fontStyle: 'italic',
-          fontWeight: 400,
-          fontFamily: 'system-ui, -apple-system, sans-serif'
-        }}>
-          Built for the moment — to see who&apos;s in.
-        </p>
-      </div>
-
-      {/* Guest form - show by default, hide only if confirmed logged in */}
-      {isLoggedIn !== true && (
-        <div style={{ 
-          marginBottom: 20, 
-          padding: 16, 
-          background: '#f8f9fa', 
-          borderRadius: 8, 
-          border: '1px solid #e9ecef',
-          maxWidth: 400,
-          marginInline: 'auto'
-        }}>
-          <p style={{ 
-            margin: '0 0 12px', 
-            fontSize: 16, 
-            fontWeight: 600,
-            color: '#374151',
-            fontFamily: 'system-ui, -apple-system, sans-serif'
-          }}>
-            Let the host know who you are:
-          </p>
-          <div style={{ display: 'grid', gap: 12 }}>
-            <input
-              type="text"
-              placeholder="Your name (optional)"
-              value={guestName}
-              onChange={(e) => setGuestName(e.target.value)}
-              style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #ddd', fontSize: 14 }}
-            />
-            <input
-              type="email"
-              placeholder="Your email (helps for future invites)"
-              value={guestEmail}
-              onChange={(e) => setGuestEmail(e.target.value)}
-              style={{ padding: '10px 12px', borderRadius: 6, border: '1px solid #ddd', fontSize: 14 }}
-            />
+            
+            <p className="text-sm text-slate-500 italic">
+              Built for the moment — to see who&apos;s in.
+            </p>
           </div>
         </div>
-      )}
-      
-      <div style={{ 
-        display: 'flex', 
-        gap: 16, 
-        justifyContent: 'center', 
-        flexWrap: 'wrap',
-        padding: '0 16px'
-      }}>
-        <button
-          onClick={() => isLoggedIn === true ? sendRSVP('join') : sendGuestRSVP('join')}
-          disabled={busy || (isLoggedIn !== true && !guestEmail.trim())}
-          style={{ 
-            background: isLoggedIn !== true && !guestEmail.trim() ? '#ccc' : 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)', 
-            color: '#fff', 
-            border: 'none', 
-            padding: '14px 24px', 
-            borderRadius: 12, 
-            fontWeight: 600, 
-            minWidth: 120,
-            minHeight: 48,
-            fontSize: 16,
-            boxShadow: isLoggedIn !== true && !guestEmail.trim() ? 'none' : '0 2px 4px rgba(59, 130, 246, 0.3)',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            position: 'relative'
-          }}
-        >
-          {state === 'join' && (
-            <span style={{
-              position: 'absolute',
-              top: '8px',
-              right: '8px',
-              width: '8px',
-              height: '8px',
-              background: '#10b981',
-              borderRadius: '50%',
-              boxShadow: '0 0 0 2px rgba(16, 185, 129, 0.3)'
-            }} />
-          )}
-          I&apos;m in
-        </button>
-        <button
-          onClick={() => isLoggedIn === true ? sendRSVP('maybe') : sendGuestRSVP('maybe')}
-          disabled={busy || (isLoggedIn !== true && !guestEmail.trim())}
-          style={{ 
-            background: isLoggedIn !== true && !guestEmail.trim() ? '#f0f0f0' : '#f4f4f4', 
-            border: '1px solid #ccc', 
-            padding: '14px 24px', 
-            borderRadius: 12, 
-            fontWeight: 600, 
-            minWidth: 120,
-            minHeight: 48,
-            fontSize: 16,
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            position: 'relative'
-          }}
-        >
-          {state === 'maybe' && (
-            <span style={{
-              position: 'absolute',
-              top: '8px',
-              right: '8px',
-              width: '8px',
-              height: '8px',
-              background: '#f59e0b',
-              borderRadius: '50%',
-              boxShadow: '0 0 0 2px rgba(245, 158, 11, 0.3)'
-            }} />
-          )}
-          Maybe
-        </button>
-        <button
-          onClick={() => isLoggedIn === true ? sendRSVP('decline') : sendGuestRSVP('decline')}
-          disabled={busy || (isLoggedIn !== true && !guestEmail.trim())}
-          style={{ 
-            background: 'transparent', 
-            border: '1px solid #ccc', 
-            padding: '14px 24px', 
-            borderRadius: 12, 
-            color: isLoggedIn !== true && !guestEmail.trim() ? '#ccc' : '#777', 
-            fontWeight: 600, 
-            minWidth: 120,
-            minHeight: 48,
-            fontSize: 16,
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            position: 'relative'
-          }}
-        >
-          {state === 'decline' && (
-            <span style={{
-              position: 'absolute',
-              top: '8px',
-              right: '8px',
-              width: '8px',
-              height: '8px',
-              background: '#ef4444',
-              borderRadius: '50%',
-              boxShadow: '0 0 0 2px rgba(239, 68, 68, 0.3)'
-            }} />
-          )}
-          Can&apos;t make it
-        </button>
-      </div>
 
-      {/* Success Animation */}
-      {showSuccess && (
-        <div style={{
-          position: 'fixed',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-          color: 'white',
-          padding: '20px 30px',
-          borderRadius: '16px',
-          fontSize: '18px',
-          fontWeight: '600',
-          boxShadow: '0 10px 25px rgba(16, 185, 129, 0.3)',
-          zIndex: 1000,
-          animation: 'successPulse 0.6s ease-out'
-        }}>
-          ✓ RSVP saved!
+        {/* Guest form - show by default, hide only if confirmed logged in */}
+        {isLoggedIn !== true && (
+          <div className="rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-lg backdrop-blur-sm">
+            <div className="space-y-4">
+              <div className="text-center">
+                <h2 className="text-lg font-semibold text-slate-900">Let the host know who you are</h2>
+                <p className="text-sm text-slate-600">This helps them recognize you</p>
+              </div>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="Your name (optional)"
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                />
+                <input
+                  type="email"
+                  placeholder="Your email (helps for future invites)"
+                  value={guestEmail}
+                  onChange={(e) => setGuestEmail(e.target.value)}
+                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+        {/* RSVP Buttons */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+          <button
+            onClick={() => isLoggedIn === true ? sendRSVP('join') : sendGuestRSVP('join')}
+            disabled={busy || (isLoggedIn !== true && !guestEmail.trim())}
+            className={`relative rounded-xl px-6 py-3 font-semibold text-white shadow-lg transition-all duration-200 disabled:cursor-not-allowed ${
+              busy || (isLoggedIn !== true && !guestEmail.trim())
+                ? 'bg-slate-300'
+                : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 hover:shadow-xl active:scale-95'
+            }`}
+          >
+            {state === 'join' && (
+              <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-green-500 shadow-lg" />
+            )}
+            I&apos;m in
+          </button>
+          
+          <button
+            onClick={() => isLoggedIn === true ? sendRSVP('maybe') : sendGuestRSVP('maybe')}
+            disabled={busy || (isLoggedIn !== true && !guestEmail.trim())}
+            className={`relative rounded-xl border border-slate-300 bg-white px-6 py-3 font-semibold text-slate-700 shadow-lg transition-all duration-200 hover:bg-slate-50 active:scale-95 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 ${
+              state === 'maybe' ? 'ring-2 ring-amber-500' : ''
+            }`}
+          >
+            {state === 'maybe' && (
+              <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-amber-500 shadow-lg" />
+            )}
+            Maybe
+          </button>
+          
+          <button
+            onClick={() => isLoggedIn === true ? sendRSVP('decline') : sendGuestRSVP('decline')}
+            disabled={busy || (isLoggedIn !== true && !guestEmail.trim())}
+            className={`relative rounded-xl border border-slate-300 bg-white px-6 py-3 font-semibold text-slate-700 shadow-lg transition-all duration-200 hover:bg-slate-50 active:scale-95 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 ${
+              state === 'decline' ? 'ring-2 ring-red-500' : ''
+            }`}
+          >
+            {state === 'decline' && (
+              <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-red-500 shadow-lg" />
+            )}
+            Can&apos;t make it
+          </button>
         </div>
-      )}
 
-      {/* Confirmation messages */}
-      {state && (
-        <p style={{ marginTop: 16, color: '#0070f3', fontWeight: 600 }}>
-          {state === 'join'
-            ? 'Great — see you there!'
-            : state === 'maybe'
-            ? 'Got it — maybe!'
-            : 'No worries, thanks for replying!'}
-        </p>
-      )}
-    </div>
+        {/* Success Animation */}
+        {showSuccess && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600 px-8 py-4 text-lg font-semibold text-white shadow-2xl animate-pulse">
+              ✓ RSVP saved!
+            </div>
+          </div>
+        )}
+
+        {/* Confirmation messages */}
+        {state && (
+          <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-center">
+            <p className="font-semibold text-blue-700">
+              {state === 'join'
+                ? 'Great — see you there!'
+                : state === 'maybe'
+                ? 'Got it — maybe!'
+                : 'No worries, thanks for replying!'}
+            </p>
+          </div>
+        )}
+      </div>
+    </main>
   );
 }

@@ -62,7 +62,7 @@ export default async function Image({
     });
 
     // Fetch invite
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('open_invites')
       .select('id,title,window_start,window_end,host_name')
       .eq('id', id)
@@ -88,48 +88,26 @@ export default async function Image({
             flexDirection: 'column',
             justifyContent: 'center',
             alignItems: 'center',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            color: 'white',
-            fontFamily: 'system-ui',
-            padding: 40,
+            background: 'linear-gradient(135deg, #74b9ff 0%, #0984e3 50%, #ffffff 100%)',
+            color: '#ffffff',
           }}
         >
-          <div style={{ 
-            fontSize: 56, 
-            fontWeight: 'bold', 
-            marginBottom: 20, 
-            textAlign: 'center',
-            color: '#ffffff',
-            lineHeight: 1.1
-          }}>
-            {emoji && <span style={{ fontSize: 64, marginRight: 12 }}>{emoji}</span>}
+          <div style={{ fontSize: 52, color: '#ffffff', display: 'flex', textAlign: 'center', fontFamily: 'system-ui, -apple-system, sans-serif', fontWeight: '600' }}>
+            {emoji && <span style={{ fontSize: 58, marginRight: 14 }}>{emoji}</span>}
             {hostName} would love to see you at {cleanTitle}
           </div>
-          
-          <div style={{ 
-            fontSize: 36, 
-            marginBottom: 24, 
-            textAlign: 'center',
-            color: '#ffffff',
-            fontWeight: '600'
-          }}>
+          <div style={{ fontSize: 44, color: '#ffffff', display: 'flex', textAlign: 'center', fontFamily: 'system-ui, -apple-system, sans-serif', fontWeight: '500' }}>
             {when}
           </div>
-          
-          <div style={{ 
-            fontSize: 28, 
-            textAlign: 'center',
-            color: '#ffffff',
-            fontWeight: '500'
-          }}>
+          <div style={{ fontSize: 36, color: '#ffffff', display: 'flex', textAlign: 'center', fontFamily: 'system-ui, -apple-system, sans-serif', fontWeight: '500' }}>
             Come if you&apos;re free ✨
           </div>
         </div>
       ),
       { width: 1200, height: 630 }
     );
-  } catch (error) {
-    console.error('OpenGraph image generation failed:', error);
+  } catch {
+    console.error('OpenGraph image generation failed');
     
     // Fallback image
     return new ImageResponse(

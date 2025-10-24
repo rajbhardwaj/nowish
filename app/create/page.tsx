@@ -194,7 +194,7 @@ function detectCircle(input: string): Circle {
   return 'Close Friends'; // Default fallback
 }
 
-function parseInput(input: string, refDate: Date, detectedCircle: Circle): Parsed {
+  function parseInput(input: string, refDate: Date): Parsed {
   // Preprocess input to handle common abbreviations and special times
   const processedInput = input
     // Handle "p" abbreviation for "pm"
@@ -222,6 +222,19 @@ function parseInput(input: string, refDate: Date, detectedCircle: Circle): Parse
     start = r.start?.date() ?? null;
     // End may be missing; if so, default to +60min from start
     end = r.end?.date() ?? (start ? new Date(start.getTime() + 60 * 60 * 1000) : null);
+    
+    // If the parsed time is in the middle of the night (2am-6am), prefer the afternoon version
+    if (start && start.getHours() >= 2 && start.getHours() <= 6) {
+      // Check if this looks like it should be afternoon (no explicit am/pm in original input)
+      const hasExplicitAmPm = /[ap]m\b/i.test(input);
+      if (!hasExplicitAmPm) {
+        // Add 12 hours to shift to afternoon
+        start = new Date(start.getTime() + 12 * 60 * 60 * 1000);
+        if (end) {
+          end = new Date(end.getTime() + 12 * 60 * 60 * 1000);
+        }
+      }
+    }
   }
 
   // Title is input with the time phrase removed (best effort)
@@ -255,6 +268,16 @@ export default function CreateInvitePage() {
   const [link, setLink] = useState<string | null>(null);
   const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null);
   const [emojiManuallyRemoved, setEmojiManuallyRemoved] = useState(false);
+  const [currentTipIndex, setCurrentTipIndex] = useState(0);
+
+  const rotatingTips = [
+    'Try "Coffee at 3pm today"',
+    'Try "Dinner tomorrow at 7:30pm"',
+    'Try "Park with kids, 3-5p"',
+    'Try "Movie night Friday 8p-10p"',
+    'Try "Brunch Sunday morning"',
+    'Try "Drinks after work"'
+  ];
 
   // auth
   useEffect(() => {
@@ -272,7 +295,7 @@ export default function CreateInvitePage() {
   }, []);
 
   const detectedCircle = useMemo(() => detectCircle(input), [input]);
-  const parsed = useMemo(() => parseInput(input, new Date(), detectedCircle), [input, detectedCircle]);
+  const parsed = useMemo(() => parseInput(input, new Date()), [input]);
   const preview = useMemo(() => formatPreview(parsed), [parsed]);
 
   // Auto-update circle when input changes and circle is detected
@@ -295,6 +318,16 @@ export default function CreateInvitePage() {
       setEmojiManuallyRemoved(false);
     }
   }, [input, parsed.emoji]);
+
+  // Rotate tips every 3 seconds when input is empty
+  useEffect(() => {
+    if (!input) {
+      const interval = setInterval(() => {
+        setCurrentTipIndex((prev) => (prev + 1) % rotatingTips.length);
+      }, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [input, rotatingTips.length]);
 
   const canCreate =
     !!user &&
@@ -379,27 +412,56 @@ export default function CreateInvitePage() {
     }
   }
 
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    window.location.href = '/';
+  }
+
   return (
     <div className="space-y-6">
       {/* signed in banner */}
-      <div className="rounded-xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 shadow-sm">
-        You&apos;re signed in as <span className="font-medium">{user?.email ?? '—'}</span>
-      </div>
+      {user ? (
+        <div className="rounded-xl border border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-700 shadow-sm flex items-center justify-between">
+          <span>
+            You&apos;re signed in as <span className="font-medium">{user.email}</span>
+          </span>
+          <button
+            onClick={handleLogout}
+            className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-colors"
+          >
+            Logout
+          </button>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 shadow-sm">
+          <div className="flex items-center justify-between">
+            <span>
+              <span className="font-medium">Sign in required</span> to create invites
+            </span>
+            <button
+              onClick={() => window.location.href = '/login'}
+              className="rounded-lg border border-amber-300 bg-white px-3 py-1 text-xs font-medium text-amber-700 hover:bg-amber-50 focus:outline-none focus:ring-2 focus:ring-amber-500/20 transition-colors"
+            >
+              Sign in
+            </button>
+          </div>
+        </div>
+      )}
 
       <header className="space-y-2">
-        <h1 className="text-4xl font-bold tracking-tight text-slate-900">Create an invite</h1>
-        <p className="text-slate-600">Write it how you&apos;d text it. We&apos;ll parse the time.</p>
+        <h1 className="text-4xl font-bold tracking-tight text-slate-900">What&apos;s happening?</h1>
+        <p className="text-slate-600">Type it like a text; we&apos;ll make it look good.</p>
       </header>
 
       <div className="rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-lg backdrop-blur-sm">
         {/* What are you doing */}
         <div className="space-y-2">
           <label className="block text-lg font-semibold text-slate-900">
-            What are you doing?
+            Tell us about it
           </label>
           <input
             className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
-            placeholder='e.g. "Park with kids, 3–5p today"'
+            placeholder="Type your invite here..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             autoFocus
@@ -412,9 +474,16 @@ export default function CreateInvitePage() {
             </div>
           )}
 
+          {/* Rotating tips when input is empty */}
+          {!input && (
+            <div className="mt-2 text-sm text-slate-500 transition-opacity duration-500">
+              💡 {rotatingTips[currentTipIndex]}
+            </div>
+          )}
+
           {/* Live Preview Card */}
           {input && (
-            <div className="mt-4 rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-6 shadow-lg">
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6 shadow-lg">
               <div className="mb-3 flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
                 <span className="text-sm font-medium text-slate-600">Live Preview</span>
@@ -558,13 +627,20 @@ export default function CreateInvitePage() {
           >
             {creating 
               ? 'Creating…' 
-              : canCreate 
-                ? 'Create Invite' 
-                : parsed.start 
-                  ? 'Create Invite'
-                  : 'Need a time first ⏰'
+              : !user
+                ? 'Sign in to create invite'
+                : canCreate 
+                  ? 'Create invite' 
+                  : parsed.start 
+                    ? 'Create invite'
+                    : 'Need a time first ⏰'
             }
           </button>
+
+          {/* Helper text */}
+          <div className="text-center text-sm text-slate-500 mt-3">
+            You&apos;ll get a link to text. Friends don&apos;t need an account.
+          </div>
 
           {link && (
             <div className="space-y-3">
@@ -603,10 +679,6 @@ export default function CreateInvitePage() {
         </div>
       </div>
 
-      <div className="text-sm text-slate-500">
-        <span className="font-medium">Tip:</span> try <span className="font-medium">&quot;Park with kids, 3–5p today&quot;</span> or{' '}
-        <span className="font-medium">&quot;Dinner, 7:30pm tomorrow&quot;</span>.
-      </div>
     </div>
   );
 }
