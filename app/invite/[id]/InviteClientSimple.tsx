@@ -39,6 +39,14 @@ function formatTimeNicely(startISO: string, endISO: string): string {
   }
 }
 
+function formatNamesList(names: string[]): string {
+  if (names.length === 0) return '';
+  if (names.length === 1) return `${names[0]} is`;
+  if (names.length === 2) return `${names[0]} and ${names[1]} are`;
+  if (names.length === 3) return `${names[0]}, ${names[1]}, and ${names[2]} are`;
+  return `${names[0]}, ${names[1]}, and ${names.length - 2} more are`;
+}
+
 export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
   const [state, setState] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -56,6 +64,10 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
     maybe: number;
     decline: number;
   }>({ join: 0, maybe: 0, decline: 0 });
+  const [rsvpNames, setRsvpNames] = useState<{
+    join: string[];
+    maybe: string[];
+  }>({ join: [], maybe: [] });
   
   // Guest form state
   const [guestName, setGuestName] = useState('');
@@ -191,20 +203,30 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
         
         setInvite(data);
 
-        // Fetch RSVP counts
+        // Fetch RSVP counts and names
         const { data: rsvpData, error: rsvpError } = await supabase
           .from('rsvps')
-          .select('state')
+          .select('state, guest_name')
           .eq('invite_id', inviteId);
 
         if (!rsvpError && rsvpData) {
-          const counts = rsvpData.reduce((acc, rsvp) => {
-            if (rsvp.state === 'join') acc.join++;
-            else if (rsvp.state === 'maybe') acc.maybe++;
-            else if (rsvp.state === 'decline') acc.decline++;
-            return acc;
-          }, { join: 0, maybe: 0, decline: 0 });
+          const counts = { join: 0, maybe: 0, decline: 0 };
+          const names = { join: [] as string[], maybe: [] as string[] };
+          
+          rsvpData.forEach(rsvp => {
+            if (rsvp.state === 'join') {
+              counts.join++;
+              if (rsvp.guest_name) names.join.push(rsvp.guest_name);
+            } else if (rsvp.state === 'maybe') {
+              counts.maybe++;
+              if (rsvp.guest_name) names.maybe.push(rsvp.guest_name);
+            } else if (rsvp.state === 'decline') {
+              counts.decline++;
+            }
+          });
+          
           setRsvpCounts(counts);
+          setRsvpNames(names);
         }
         
         setLoading(false);
@@ -269,12 +291,12 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
                 <div className="flex flex-wrap justify-center gap-4 text-sm">
                   {rsvpCounts.join > 0 && (
                     <span className="font-medium text-green-600">
-                      👥 {rsvpCounts.join} {rsvpCounts.join === 1 ? 'person is' : 'people are'} in
+                      👥 {formatNamesList(rsvpNames.join)} in
                     </span>
                   )}
                   {rsvpCounts.maybe > 0 && (
                     <span className="font-medium text-amber-600">
-                      {rsvpCounts.maybe} {rsvpCounts.maybe === 1 ? 'person is' : 'people are'} maybe
+                      {formatNamesList(rsvpNames.maybe)} maybe
                     </span>
                   )}
                 </div>
