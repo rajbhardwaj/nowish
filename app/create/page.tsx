@@ -329,15 +329,23 @@ export default function CreateInvitePage() {
     }
   }, [input, rotatingTips.length]);
 
-  // Scroll to input field on mobile when focused
+  // Scroll to show preview when input is focused
   const handleInputFocus = () => {
-    // Small delay to let keyboard appear, then scroll to input
+    // Wait for keyboard to appear, then scroll to show the preview
     setTimeout(() => {
-      const inputElement = document.querySelector('input[type="text"]') as HTMLElement;
-      if (inputElement) {
-        inputElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const previewCard = document.getElementById('live-preview-card');
+      if (previewCard) {
+        previewCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        // Fallback: scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
-    }, 300);
+    }, 200);
+    
+    // Additional backup scroll
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 600);
   };
 
   const canCreate =
@@ -495,7 +503,7 @@ export default function CreateInvitePage() {
 
           {/* Live Preview Card */}
           {input && (
-            <div className="mt-4 rounded-2xl border border-slate-200 bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6 shadow-lg">
+            <div id="live-preview-card" className="mt-4 rounded-2xl border border-slate-200 bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6 shadow-lg">
               <div className="mb-3 flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
                 <span className="text-sm font-medium text-slate-600">Live Preview</span>
