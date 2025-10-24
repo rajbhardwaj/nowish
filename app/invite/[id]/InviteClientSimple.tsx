@@ -99,6 +99,15 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
         return;
       }
       
+      // Get user's display name from their profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('id', user.id)
+        .single();
+      
+      const displayName = profile?.display_name || userEmail.split('@')[0];
+      
       // Save RSVP to database (logged in user)
       const { data, error } = await supabase
         .from('rsvps')
@@ -106,7 +115,7 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
           invite_id: inviteId,
           state: status,
           guest_email: userEmail,
-          guest_name: null,
+          guest_name: displayName,
         }, { onConflict: 'invite_id,guest_email' })
         .select();
       
@@ -216,10 +225,13 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
           rsvpData.forEach(rsvp => {
             if (rsvp.state === 'join') {
               counts.join++;
-              if (rsvp.guest_name) names.join.push(rsvp.guest_name);
+              // Use guest_name if available, otherwise use email username
+              const displayName = rsvp.guest_name || 'Someone';
+              names.join.push(displayName);
             } else if (rsvp.state === 'maybe') {
               counts.maybe++;
-              if (rsvp.guest_name) names.maybe.push(rsvp.guest_name);
+              const displayName = rsvp.guest_name || 'Someone';
+              names.maybe.push(displayName);
             } else if (rsvp.state === 'decline') {
               counts.decline++;
             }
