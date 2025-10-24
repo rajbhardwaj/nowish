@@ -62,7 +62,7 @@ export default async function Image({
     });
 
     // Fetch invite
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('open_invites')
       .select('id,title,window_start,window_end,host_name')
       .eq('id', id)

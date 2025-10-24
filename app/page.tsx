@@ -125,7 +125,7 @@ export default function HomePage() {
           margin: '0 0 1rem',
           fontWeight: '500'
         }}>
-          Built for the moment — to see who's in.
+          Built for the moment — to see who&apos;s in.
         </p>
         <p style={{ 
           fontSize: '1rem',
@@ -286,7 +286,7 @@ export default function HomePage() {
           lineHeight: '1.4'
         }}>
           <div>Takes ~10 seconds. No app required.</div>
-          <div>You'll share a link. Friends don't need an account.</div>
+          <div>You&apos;ll share a link. Friends don&apos;t need an account.</div>
         </div>
         
         <div style={{ 
@@ -377,7 +377,7 @@ export default function HomePage() {
           }}>
             <span style={{ fontSize: '1.5rem' }}>👆</span>
             <span style={{ color: '#475569', fontWeight: '500' }}>
-              Tap to RSVP — see who's in without the group-chat scroll
+              Tap to RSVP — see who&apos;s in without the group-chat scroll
             </span>
           </div>
           <div style={{ 
