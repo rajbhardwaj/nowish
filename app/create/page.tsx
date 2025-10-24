@@ -404,7 +404,7 @@ export default function CreateInvitePage() {
         try {
           await navigator.share({
             title: parsed.title,
-            text: `Join me: ${preview}`,
+            text: preview,
             url,
           });
         } catch {
