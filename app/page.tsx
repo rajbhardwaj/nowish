@@ -10,11 +10,19 @@ export default function HomePage() {
   const [email, setEmail] = useState<string | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const [cardAnimated, setCardAnimated] = useState(false);
+  const [totalInvites, setTotalInvites] = useState<number | null>(null);
 
   useEffect(() => {
     (async () => {
       const { data } = await supabase.auth.getSession();
       setEmail(data.session?.user?.email ?? null);
+      
+      // Get total invites created
+      const { count } = await supabase
+        .from('open_invites')
+        .select('*', { count: 'exact', head: true });
+      setTotalInvites(count);
+      
       setChecking(false);
     })();
   }, []);
@@ -136,6 +144,17 @@ export default function HomePage() {
           Nowish is for spontaneous hangs.<br />
           Text it like you normally would; we make it look good.
         </p>
+        
+        {totalInvites !== null && (
+          <p style={{ 
+            fontSize: '0.9rem',
+            color: '#6b7280',
+            margin: '0 0 1.5rem',
+            fontWeight: '500'
+          }}>
+            {totalInvites} invites created so far
+          </p>
+        )}
       </div>
 
       {/* Preview Card */}
@@ -318,9 +337,9 @@ export default function HomePage() {
             borderRadius: '8px',
           }}>
             <span style={{ fontSize: '1.5rem' }}>🔗</span>
-            <span style={{ color: '#475569', fontWeight: '500' }}>
-              One link with everything — title, time & map in one place
-            </span>
+                  <span style={{ color: '#475569', fontWeight: '500' }}>
+                    One link with everything — title & time in one place
+                  </span>
           </div>
           <div style={{ 
             display: 'flex', 
