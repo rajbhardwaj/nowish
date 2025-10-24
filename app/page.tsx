@@ -11,6 +11,26 @@ export default function HomePage() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [cardAnimated, setCardAnimated] = useState(false);
   const [totalInvites, setTotalInvites] = useState<number | null>(null);
+  const [showWhyAccordion, setShowWhyAccordion] = useState(false);
+  const [hasPulsed, setHasPulsed] = useState(false);
+
+  const toggleWhyAccordion = () => {
+    const newState = !showWhyAccordion;
+    setShowWhyAccordion(newState);
+    
+    // If opening the accordion, scroll to it after a longer delay to ensure DOM update
+    if (newState) {
+      setTimeout(() => {
+        const accordionElement = document.getElementById('why-accordion');
+        if (accordionElement) {
+          accordionElement.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start' 
+          });
+        }
+      }, 200);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -43,6 +63,16 @@ export default function HomePage() {
     return () => clearTimeout(timer);
   }, []);
 
+  // Trigger lightning pulse on first visit
+  useEffect(() => {
+    if (!hasPulsed) {
+      const timer = setTimeout(() => {
+        setHasPulsed(true);
+      }, 1500); // 1.5 seconds duration
+      return () => clearTimeout(timer);
+    }
+  }, [hasPulsed]);
+
   if (checking) {
     return <main style={{ padding: 24 }}>Loading…</main>;
   }
@@ -54,6 +84,13 @@ export default function HomePage() {
           0% { transform: scale(1); }
           50% { transform: scale(1.05); }
           100% { transform: scale(1.02); }
+        }
+        @keyframes lightningPulse {
+          0% { transform: scale(1); opacity: 1; }
+          25% { transform: scale(1.1); opacity: 0.8; }
+          50% { transform: scale(1.05); opacity: 1; }
+          75% { transform: scale(1.08); opacity: 0.9; }
+          100% { transform: scale(1); opacity: 1; }
         }
       `}</style>
       
@@ -100,49 +137,25 @@ export default function HomePage() {
         )}
       </div>
       
-      <main style={{ 
-        maxWidth: 600, 
-        margin: '1rem auto', 
-        padding: '1rem 1.5rem',
-        textAlign: 'center'
-      }}>
+      <main className="max-w-2xl mx-auto px-6 py-4 text-center pb-[max(24px,env(safe-area-inset-bottom))]">
       {/* Hero Section */}
-      <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ 
-          fontSize: '4rem',
-          fontWeight: '800',
-          margin: '0 0 0.5rem',
-          background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
-          backgroundClip: 'text',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          letterSpacing: '-0.02em'
-        }}>
+      <div className="mb-8">
+        <h1 className="text-5xl sm:text-6xl font-extrabold mb-2 bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent tracking-tight">
           Nowish
         </h1>
-        <div style={{ 
-          fontSize: '1.5rem',
-          marginBottom: '0.25rem',
-          color: '#6b7280'
+        <div className={`text-2xl mb-1 text-slate-500 ${!hasPulsed ? 'animate-pulse' : ''}`} style={{
+          animation: !hasPulsed ? 'lightningPulse 1.5s ease-in-out' : 'none'
         }}>
           ⚡️
         </div>
-        <p style={{ 
-          fontSize: '1.25rem',
-          color: '#6b7280',
-          margin: '0 0 0.5rem',
-          fontWeight: '500'
-        }}>
-          About to do something? See who can make it.
+        <div className="text-sm text-slate-500 mb-1 font-medium tracking-wide">
+          About to do something?
+        </div>
+        <p className="text-xl text-slate-700 mb-2 font-medium leading-tight" style={{ textWrap: 'balance' }}>
+          See who's in.
         </p>
-        <p style={{ 
-          fontSize: '1rem',
-          color: '#9ca3af',
-          margin: '0 0 1.5rem',
-          fontWeight: '400'
-        }}>
-          Nowish is for spontaneous hangs.<br />
-          Text it like you normally would; we make it look good.
+        <p className="text-base text-slate-600 mb-6 font-normal">
+          Text it like you would—we make it look good.
         </p>
       </div>
 
@@ -182,16 +195,9 @@ export default function HomePage() {
           <div style={{ 
             fontSize: '12px', 
             color: '#6b7280',
-            marginBottom: '12px'
+            marginBottom: '4px'
           }}>
             from Sarah
-          </div>
-          <div style={{ 
-            fontSize: '12px',
-            color: '#6b7280',
-            fontStyle: 'italic'
-          }}>
-            About to do something? See who can make it.
           </div>
         </div>
         <div style={{ 
@@ -200,8 +206,19 @@ export default function HomePage() {
           fontSize: '12px',
           color: '#9ca3af'
         }}>
-          Tap to RSVP · Works in iMessage/WhatsApp
+          Tap to RSVP.
         </div>
+      </div>
+      
+      {/* Demo Card Caption */}
+      <div style={{ 
+        textAlign: 'center',
+        marginTop: '0.5rem',
+        fontSize: '0.7rem',
+        color: '#9ca3af',
+        fontStyle: 'italic'
+      }}>
+        For moments, not parties.
       </div>
 
       {/* Action Buttons */}
@@ -243,8 +260,35 @@ export default function HomePage() {
           marginTop: '8px',
           lineHeight: '1.4'
         }}>
-          <div>Takes ~10 seconds. No app required.</div>
-          <div>You&apos;ll share a link. Friends don&apos;t need an account.</div>
+          No app for your friends. One link, tap to RSVP.
+        </div>
+        
+        <div style={{ 
+          textAlign: 'center',
+          marginTop: '1rem'
+        }}>
+          <button
+            onClick={toggleWhyAccordion}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#6b7280',
+              textDecoration: 'underline',
+              cursor: 'pointer',
+              fontSize: '0.8rem'
+            }}
+          >
+            Why Nowish?
+          </button>
+          {totalInvites !== null && (
+            <div style={{
+              fontSize: '0.7rem',
+              color: '#9ca3af',
+              marginTop: '0.25rem'
+            }}>
+              {totalInvites} invites created so far
+            </div>
+          )}
         </div>
 
         {email && (
@@ -295,91 +339,74 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Why Nowish Section */}
-      <div style={{ 
-        marginTop: '3rem',
-        padding: '2rem',
-        background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
-        borderRadius: '16px',
-        border: '1px solid #e2e8f0'
-      }}>
-        <h3 style={{ 
-          fontSize: '1.5rem',
-          fontWeight: '700',
-          color: '#1e293b',
-          margin: '0 0 1.5rem',
-          textAlign: 'center'
-        }}>
-          Why Nowish?
-        </h3>
-        <div style={{ 
-          display: 'grid', 
-          gap: '1rem',
-          textAlign: 'left'
-        }}>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '0.75rem',
-            padding: '0.75rem',
-            background: 'white',
-            borderRadius: '8px',
+      {/* Why Nowish Accordion */}
+      {showWhyAccordion && (
+        <div 
+          id="why-accordion"
+          style={{ 
+            marginTop: '2rem',
+            padding: '1.5rem',
+            background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+            borderRadius: '12px',
+            border: '1px solid #e2e8f0'
           }}>
-            <span style={{ fontSize: '1.5rem' }}>🔗</span>
-                  <span style={{ color: '#475569', fontWeight: '500' }}>
-                    One link with everything — title & time in one place
-                  </span>
-          </div>
           <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
+            display: 'grid', 
             gap: '0.75rem',
-            padding: '0.75rem',
-            background: 'white',
-            borderRadius: '8px',
+            textAlign: 'left'
           }}>
-            <span style={{ fontSize: '1.5rem' }}>👆</span>
-            <span style={{ color: '#475569', fontWeight: '500' }}>
-              Tap to RSVP — see who&apos;s in without the group-chat scroll
-            </span>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.75rem',
+              padding: '0.75rem',
+              background: 'white',
+              borderRadius: '8px',
+            }}>
+              <span style={{ fontSize: '1.25rem' }}>🔗</span>
+              <span style={{ color: '#475569', fontWeight: '500', fontSize: '0.9rem' }}>
+                One link with everything — title & time in one place
+              </span>
+            </div>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.75rem',
+              padding: '0.75rem',
+              background: 'white',
+              borderRadius: '8px',
+            }}>
+              <span style={{ fontSize: '1.25rem' }}>👆</span>
+              <span style={{ color: '#475569', fontWeight: '500', fontSize: '0.9rem' }}>
+                Tap to RSVP — see who&apos;s in without the group-chat scroll
+              </span>
+            </div>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.75rem',
+              padding: '0.75rem',
+              background: 'white',
+              borderRadius: '8px',
+            }}>
+              <span style={{ fontSize: '1.25rem' }}>📱</span>
+              <span style={{ color: '#475569', fontWeight: '500', fontSize: '0.9rem' }}>
+                No app to install — send over text, works with your messaging
+              </span>
+            </div>
           </div>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '0.75rem',
-            padding: '0.75rem',
-            background: 'white',
-            borderRadius: '8px',
-          }}>
-            <span style={{ fontSize: '1.5rem' }}>📱</span>
-            <span style={{ color: '#475569', fontWeight: '500' }}>
-              No app to install — send over text, works with your messaging
-            </span>
-          </div>
-        </div>
-        
-        {/* Trust Microcopy */}
-        <div style={{
-          textAlign: 'center',
-          marginTop: '2rem',
-          fontSize: '0.75rem',
-          color: '#9ca3af'
-        }}>
-          No contacts upload. We won&apos;t text anyone unless they opt in.
-        </div>
-        
-        {/* Social Proof Counter */}
-        {totalInvites !== null && (
+          
           <div style={{
             textAlign: 'center',
             marginTop: '1rem',
             fontSize: '0.7rem',
             color: '#9ca3af'
           }}>
-            {totalInvites} invites created so far
+            No contacts upload. We won&apos;t text anyone unless they opt in.
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
       </main>
     </>
   );
