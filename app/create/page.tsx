@@ -288,12 +288,40 @@ function detectCircle(input: string): Circle {
         }
       }
     }
+    
+    // Smart time logic: if the parsed time is in the past today, move it to tomorrow
+    if (start) {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const parsedToday = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+      
+      // If the parsed time is today but in the past, move to tomorrow
+      if (parsedToday.getTime() === today.getTime() && start.getTime() < now.getTime()) {
+        start = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+        if (end) {
+          end = new Date(end.getTime() + 24 * 60 * 60 * 1000);
+        }
+      }
+    }
   }
 
   // Title is input with the time phrase removed (best effort)
   const timeSpan =
     results.length > 0 ? input.slice(results[0].index, results[0].index + results[0].text.length) : '';
   let title = input.replace(timeSpan, '').trim().replace(/[–—-]\s*$/,'') || input.trim();
+  
+  // Additional cleanup for mobile - remove common time words that might be left behind
+  title = title.replace(/\b(from|at|@)\s+[a-z]+\b/gi, '').trim();
+  
+  // If title is still too long or contains time-related words, try more aggressive cleanup
+  if (title.length > 20 || /\b(noon|midnight|am|pm|morning|afternoon|evening|night)\b/i.test(title)) {
+    // Split by common time indicators and take the first part
+    const timeIndicators = /\b(from|at|@|on|in)\s+/i;
+    const parts = title.split(timeIndicators);
+    if (parts.length > 1) {
+      title = parts[0].trim();
+    }
+  }
   
   // Clean up common punctuation that might be left behind
   title = title.replace(/,\s*$/, '').replace(/\.\s*$/, '').trim();
