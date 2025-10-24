@@ -14,7 +14,6 @@ function CallbackInner() {
       try {
         // allow override like /auth/callback?next=/create
         const next = params.get('next') || '/create';
-        const name = params.get('name');
 
         // 1) magic-link flow with ?code=
         const code = params.get('code');

@@ -59,7 +59,7 @@ export default function SetupNamePage() {
                 What should we call you?
               </label>
               <p className="text-sm text-slate-600">
-                This makes your invites more personal. People will see "Raj would love to see you at..." instead of your email.
+                This makes your invites more personal. People will see &quot;Raj would love to see you at...&quot; instead of your email.
               </p>
               <input
                 type="text"
