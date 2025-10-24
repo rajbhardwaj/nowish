@@ -152,14 +152,23 @@ function formatPreview(p: Parsed): string {
   
   // Format according to style guide
   const formatTime = (time: string) => {
-    // Remove :00 minutes and handle meridiem
-    return time.replace(':00', '').replace(' AM', ' AM').replace(' PM', ' PM');
+    // Remove :00 minutes
+    return time.replace(':00', '');
   };
   
   const startFormatted = formatTime(start);
   const endFormatted = formatTime(end);
   
-  return `${p.title} — ${startFormatted}–${endFormatted}`;
+  // Check if same meridiem
+  const startMeridiem = start.includes('AM') ? 'AM' : 'PM';
+  const endMeridiem = end.includes('AM') ? 'AM' : 'PM';
+  const sameMeridiem = startMeridiem === endMeridiem;
+  
+  // Format end time - remove meridiem if same as start
+  const endTimeOnly = endFormatted.replace(/ (AM|PM)/, '');
+  const finalEndTime = sameMeridiem ? endTimeOnly : endFormatted;
+  
+  return `${p.title} — ${startFormatted}–${finalEndTime}`;
 }
 
 function detectEmoji(input: string): string | null {

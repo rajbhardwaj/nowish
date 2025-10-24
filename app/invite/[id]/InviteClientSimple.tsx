@@ -35,18 +35,14 @@ function formatTimeNicely(startISO: string, endISO: string): string {
   const endMeridiem = endTime.includes('AM') ? 'AM' : 'PM';
   const sameMeridiem = startMeridiem === endMeridiem;
   
+  // Format end time - remove meridiem if same as start
+  const endTimeOnly = endFormatted.replace(/ (AM|PM)/, '');
+  const finalEndTime = sameMeridiem ? endTimeOnly : endFormatted;
+  
   if (isToday) {
-    if (sameMeridiem) {
-      return `Today, ${startFormatted}–${endFormatted}`;
-    } else {
-      return `Today, ${startFormatted}–${endFormatted}`;
-    }
+    return `Today, ${startFormatted}–${finalEndTime}`;
   } else if (isTomorrow) {
-    if (sameMeridiem) {
-      return `Tomorrow, ${startFormatted}–${endFormatted}`;
-    } else {
-      return `Tomorrow, ${startFormatted}–${endFormatted}`;
-    }
+    return `Tomorrow, ${startFormatted}–${finalEndTime}`;
   } else {
     // For other days, show day and time
     const dayOptions: Intl.DateTimeFormatOptions = {
