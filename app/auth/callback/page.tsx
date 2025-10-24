@@ -14,12 +14,34 @@ function CallbackInner() {
       try {
         // allow override like /auth/callback?next=/create
         const next = params.get('next') || '/create';
+        const name = params.get('name');
 
         // 1) magic-link flow with ?code=
         const code = params.get('code');
         if (code) {
           const { error } = await supabase.auth.exchangeCodeForSession(code);
-          window.location.replace(error ? '/login' : next);
+          if (error) {
+            window.location.replace('/login');
+            return;
+          }
+          
+          // Check if user needs to set their name
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('display_name')
+              .eq('id', user.id)
+              .single();
+            
+            // If user doesn't have a display name, redirect to name setup
+            if (!profile?.display_name) {
+              window.location.replace('/setup-name?next=' + encodeURIComponent(next));
+              return;
+            }
+          }
+          
+          window.location.replace(next);
           return;
         }
 
@@ -31,7 +53,28 @@ function CallbackInner() {
           const refresh_token = hash.get('refresh_token') || '';
           if (access_token && refresh_token) {
             const { error } = await supabase.auth.setSession({ access_token, refresh_token });
-            window.location.replace(error ? '/login' : next);
+            if (error) {
+              window.location.replace('/login');
+              return;
+            }
+            
+            // Check if user needs to set their name
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('display_name')
+                .eq('id', user.id)
+                .single();
+              
+              // If user doesn't have a display name, redirect to name setup
+              if (!profile?.display_name) {
+                window.location.replace('/setup-name?next=' + encodeURIComponent(next));
+                return;
+              }
+            }
+            
+            window.location.replace(next);
             return;
           }
         }
