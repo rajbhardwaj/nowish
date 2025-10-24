@@ -269,6 +269,7 @@ function detectCircle(input: string): Circle {
   
   let start: Date | null = null;
   let end: Date | null = null;
+  let timeMovedToTomorrow = false;
 
   if (results.length > 0) {
     const r = results[0];
@@ -295,11 +296,19 @@ function detectCircle(input: string): Circle {
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const parsedToday = new Date(start.getFullYear(), start.getMonth(), start.getDate());
       
+      // Check if user explicitly said "today"
+      const hasExplicitToday = /\b(today)\b/i.test(input);
+      
       // If the parsed time is today but in the past, move to tomorrow
       if (parsedToday.getTime() === today.getTime() && start.getTime() < now.getTime()) {
         start = new Date(start.getTime() + 24 * 60 * 60 * 1000);
         if (end) {
           end = new Date(end.getTime() + 24 * 60 * 60 * 1000);
+        }
+        
+        // Track if we moved it to tomorrow due to explicit "today"
+        if (hasExplicitToday) {
+          timeMovedToTomorrow = true;
         }
       }
     }
@@ -361,6 +370,7 @@ function detectCircle(input: string): Circle {
     end,
     whenText: results.length > 0 ? results[0].text : null,
     emoji,
+    timeMovedToTomorrow,
   };
 }
 
@@ -765,6 +775,21 @@ export default function CreateInvitePage() {
                 ) : (
                   <div className="text-slate-400 italic">
                     Add a time to see when this happens
+                  </div>
+                )}
+
+                {/* Time moved warning */}
+                {parsed.timeMovedToTomorrow && (
+                  <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-center">
+                    <div className="flex items-center justify-center gap-2 text-amber-800">
+                      <svg className="h-4 w-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      <span className="text-sm font-medium">Time moved to tomorrow</span>
+                    </div>
+                    <p className="text-sm text-amber-700 mt-1">
+                      That time has already passed today, so we set it for tomorrow.
+                    </p>
                   </div>
                 )}
 
