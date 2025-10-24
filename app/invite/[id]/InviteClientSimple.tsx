@@ -219,6 +219,7 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
           .eq('invite_id', inviteId);
 
         if (!rsvpError && rsvpData) {
+          console.log('RSVP data:', rsvpData); // Debug log
           const counts = { join: 0, maybe: 0, decline: 0 };
           const names = { join: [] as string[], maybe: [] as string[] };
           
@@ -227,6 +228,7 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
               counts.join++;
               // Use guest_name if available, otherwise use email username
               const displayName = rsvp.guest_name || 'Someone';
+              console.log('Join RSVP:', { guest_name: rsvp.guest_name, displayName }); // Debug log
               names.join.push(displayName);
             } else if (rsvp.state === 'maybe') {
               counts.maybe++;

@@ -419,6 +419,15 @@ export default function CreateInvitePage() {
       }
       const id: string = data.id;
       
+      // Get fresh display name from profile for host RSVP
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('id', user.id)
+        .single();
+      
+      const hostDisplayName = profile?.display_name || hostName || user.email?.split('@')[0] || 'Host';
+      
       // Add the host as the first RSVP
       await supabase
         .from('rsvps')
@@ -426,7 +435,7 @@ export default function CreateInvitePage() {
           invite_id: id,
           state: 'join',
           guest_email: user.email,
-          guest_name: hostName || user.email?.split('@')[0],
+          guest_name: hostDisplayName,
         });
       
       const base = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://nowish.vercel.app');
