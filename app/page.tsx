@@ -196,28 +196,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* User Status */}
-      {email && (
-        <div
-          style={{
-            background: 'linear-gradient(135deg, #f0f4ff 0%, #f8fafc 100%)',
-            padding: '0.5rem 1rem',
-            borderRadius: '8px',
-            margin: '0 0 1rem',
-            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
-          }}
-        >
-          <p style={{ 
-            margin: 0, 
-            fontSize: '0.8rem',
-            color: '#475569',
-            fontWeight: '500'
-          }}>
-            Signed in as <strong style={{ color: '#1e293b' }}>{email}</strong>
-          </p>
-        </div>
-      )}
-
       {/* Action Buttons */}
       <div style={{ 
         display: 'grid', 
@@ -260,7 +238,6 @@ export default function HomePage() {
           <div>Takes ~10 seconds. No app required.</div>
           <div>You&apos;ll share a link. Friends don&apos;t need an account.</div>
         </div>
-        
 
         {email && (
           <button
@@ -285,6 +262,30 @@ export default function HomePage() {
         )}
 
       </div>
+
+      {/* User Status */}
+      {email && (
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #f0f4ff 0%, #f8fafc 100%)',
+            padding: '0.5rem 1rem',
+            borderRadius: '8px',
+            margin: '1rem auto 0',
+            maxWidth: '400px',
+            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
+          }}
+        >
+          <p style={{ 
+            margin: 0, 
+            fontSize: '0.8rem',
+            color: '#475569',
+            fontWeight: '500',
+            textAlign: 'center'
+          }}>
+            Signed in as <strong style={{ color: '#1e293b' }}>{email}</strong>
+          </p>
+        </div>
+      )}
 
       {/* Why Nowish Section */}
       <div style={{ 
