@@ -201,15 +201,15 @@ export default function HomePage() {
         <div
           style={{
             background: 'linear-gradient(135deg, #f0f4ff 0%, #f8fafc 100%)',
-            padding: '1rem 1.5rem',
-            borderRadius: '12px',
-            margin: '0 0 2rem',
-            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
+            padding: '0.5rem 1rem',
+            borderRadius: '8px',
+            margin: '0 0 1rem',
+            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
           }}
         >
           <p style={{ 
             margin: 0, 
-            fontSize: '0.95rem',
+            fontSize: '0.8rem',
             color: '#475569',
             fontWeight: '500'
           }}>
