@@ -707,7 +707,7 @@ export default function CreateInvitePage() {
 
           {/* Activity chips */}
           <div className="mt-4">
-            <div className="mb-2 text-sm font-medium text-slate-600">Quick start:</div>
+            <div className="mb-2 text-sm font-medium text-slate-600">Try one, or just type</div>
             <div className="flex flex-wrap gap-2">
               {[
                 { emoji: '☕', text: 'Coffee', suggestion: (() => {

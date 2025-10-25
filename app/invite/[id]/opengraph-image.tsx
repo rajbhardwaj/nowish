@@ -275,25 +275,12 @@ export default async function Image({
                   fontSize: '24px',
                   fontStyle: 'italic',
                   color: '#64748b',
-                  marginBottom: '12px',
                   fontFamily: 'system-ui, -apple-system, sans-serif',
                   display: 'flex',
                   justifyContent: 'center',
                 }}
               >
                 If you&apos;re free, swing by ✨
-              </div>
-              
-              <div
-                style={{
-                  fontSize: '20px',
-                  color: '#64748b',
-                  fontFamily: 'system-ui, -apple-system, sans-serif',
-                  display: 'flex',
-                  justifyContent: 'center',
-                }}
-              >
-                From {hostName}
               </div>
             </div>
           </div>
