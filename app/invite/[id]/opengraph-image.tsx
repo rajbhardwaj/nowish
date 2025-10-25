@@ -33,17 +33,30 @@ function formatWhen(startISO: string, endISO: string): string {
   const start = new Date(startISO);
   const end = new Date(endISO);
 
-  const opts: Intl.DateTimeFormatOptions = {
+  // Use the same timezone-aware formatting as the invite card
+  const timeOptions: Intl.DateTimeFormatOptions = {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  };
+  
+  const startTime = start.toLocaleTimeString(undefined, timeOptions);
+  const endTime = end.toLocaleTimeString(undefined, timeOptions);
+  
+  // Format times according to style guide (remove :00 minutes)
+  const formatTime = (time: string) => time.replace(':00', '');
+  const startFormatted = formatTime(startTime);
+  const endFormatted = formatTime(endTime);
+  
+  // Format date
+  const dateOptions: Intl.DateTimeFormatOptions = {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
   };
+  const dateFormatted = new Intl.DateTimeFormat(undefined, dateOptions).format(start);
   
-  const dateFormatted = new Intl.DateTimeFormat(undefined, opts).format(start);
-  const startTime = formatTimeDisplay(start);
-  const endTime = formatTimeDisplay(end);
-  
-  return `${dateFormatted}, ${startTime} – ${endTime}`;
+  return `${dateFormatted}, ${startFormatted} – ${endFormatted}`;
 }
 
 export default async function Image({

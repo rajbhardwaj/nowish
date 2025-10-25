@@ -40,10 +40,13 @@ export default function HomePage() {
     // Trigger haptic feedback (if supported and in secure context)
     if (typeof navigator !== 'undefined' && navigator.vibrate && window.isSecureContext) {
       try {
-        navigator.vibrate(50); // 50ms vibration
-      } catch {
-        // Ignore vibration errors
+        // Try different vibration patterns for better feedback
+        navigator.vibrate([50, 30, 50]); // Pattern: vibrate, pause, vibrate
+      } catch (error) {
+        console.log('Vibration not supported:', error);
       }
+    } else {
+      console.log('Vibration not available - navigator.vibrate:', !!navigator?.vibrate, 'isSecureContext:', window.isSecureContext);
     }
     
     // Reset ripple after animation
