@@ -252,7 +252,7 @@ export default async function Image({
                   justifyContent: 'center',
                 }}
               >
-                {hostName} would love to see you at
+                If you're free, swing by ✨
               </div>
               
               <div
@@ -273,13 +273,25 @@ export default async function Image({
                 style={{
                   fontSize: '24px',
                   color: '#64748b',
-                  marginBottom: '16px',
+                  marginBottom: '12px',
                   fontFamily: 'system-ui, -apple-system, sans-serif',
                   display: 'flex',
                   justifyContent: 'center',
                 }}
               >
                 {when}
+              </div>
+              
+              <div
+                style={{
+                  fontSize: '18px',
+                  color: '#94a3b8',
+                  fontFamily: 'system-ui, -apple-system, sans-serif',
+                  display: 'flex',
+                  justifyContent: 'center',
+                }}
+              >
+                From {hostName}
               </div>
             </div>
           </div>

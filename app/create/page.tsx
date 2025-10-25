@@ -27,7 +27,7 @@ const EMOJI_MAPPINGS = [
   { keywords: ['table tennis', 'ping pong'], emoji: '🏓' },
   { keywords: ['tennis'], emoji: '🎾' },
   { keywords: ['gym', 'gymnasium', 'workout', 'work out', 'exercising', 'exercise'], emoji: '💪' },
-  { keywords: ['running', 'run', 'jog', 'jogging', 'marathon'], emoji: '🏃' },
+  { keywords: ['running', 'run', 'jog', 'jogging', 'marathon', 'short run'], emoji: '🏃' },
   { keywords: ['hiking', 'hike', 'trail'], emoji: '🥾' },
   { keywords: ['swimming', 'swim', 'pool'], emoji: '🏊' },
   { keywords: ['basketball', 'hoops', 'lakers', 'warriors', 'celtics', 'heat', 'bulls', 'knicks', 'nets', '76ers', 'bucks', 'suns', 'nuggets', 'mavericks', 'clippers', 'spurs'], emoji: '🏀' },
@@ -37,12 +37,14 @@ const EMOJI_MAPPINGS = [
   { keywords: ['yoga', 'meditation'], emoji: '🧘' },
   { keywords: ['golf', 'golfing'], emoji: '⛳' },
   { keywords: ['climbing', 'rock climbing', 'bouldering'], emoji: '🧗' },
+  { keywords: ['pickleball'], emoji: '🏓' },
 
   // Food & Drinks (with work context override)
   { keywords: ['coffee', 'cafe', 'latte', 'espresso', 'cappuccino'], emoji: '☕' },
   { keywords: ['dinner', 'dining'], emoji: '🍽️' },
   { keywords: ['lunch'], emoji: '🥪', workContext: '🥗' }, // Different emoji for work lunch
   { keywords: ['brunch', 'breakfast'], emoji: '🥞' },
+  { keywords: ['game + drinks', 'game and drinks'], emoji: '🏈' },
   { keywords: ['drinks', 'cocktails', 'cocktail', 'bar', 'happy hour'], emoji: '🍸' },
   { keywords: ['beer', 'brewery', 'brewing'], emoji: '🍺' },
   { keywords: ['wine', 'winery', 'tasting'], emoji: '🍷' },
@@ -50,6 +52,7 @@ const EMOJI_MAPPINGS = [
   { keywords: ['sushi'], emoji: '🍣' },
   { keywords: ['ice cream', 'dessert'], emoji: '🍦' },
   { keywords: ['cake', 'birthday cake'], emoji: '🎂' },
+  { keywords: ['quick bite'], emoji: '🌯' },
 
   // Entertainment
   { keywords: ['movie', 'cinema', 'film', 'movies', 'movie night'], emoji: '🎬' },
@@ -62,6 +65,7 @@ const EMOJI_MAPPINGS = [
   { keywords: ['art', 'gallery', 'painting'], emoji: '🎨' },
 
   // Family & Kids
+  { keywords: ['park with kids', 'park w/ kids'], emoji: '🌳👶🏽' },
   { keywords: ['kids', 'children', 'child', 'baby'], emoji: '👶' },
   { keywords: ['park', 'playground', 'play date'], emoji: '🌳' },
   { keywords: ['zoo', 'aquarium'], emoji: '🦁' },
@@ -77,6 +81,7 @@ const EMOJI_MAPPINGS = [
   // Shopping & Errands
   { keywords: ['shopping', 'shop', 'mall'], emoji: '🛍️' },
   { keywords: ['market', 'grocery', 'grocery store', 'supermarket'], emoji: '🛒' },
+  { keywords: ['errand'], emoji: '🛒' },
   { keywords: ['flea market', 'thrift'], emoji: '🏺' },
 
   // Outdoor & Nature
@@ -92,6 +97,11 @@ const EMOJI_MAPPINGS = [
   { keywords: ['airport', 'flight', 'flying'], emoji: '✈️' },
   { keywords: ['train', 'railway'], emoji: '🚂' },
   { keywords: ['walking', 'walk'], emoji: '🚶' },
+  { keywords: ['dog park'], emoji: '🐶' },
+  { keywords: ['park with kids'], emoji: '🌳' },
+  { keywords: ['game + drinks', 'game and drinks', 'game + beers', 'game and beers'], emoji: '🍻' },
+  { keywords: ['lunch near work'], emoji: '🥪' },
+  { keywords: ['ice-cream', 'ice cream'], emoji: '🍦' },
 
   // Special Occasions
   { keywords: ['birthday', 'bday'], emoji: '🎂' },
@@ -695,6 +705,127 @@ export default function CreateInvitePage() {
             </div>
           )}
 
+          {/* Activity chips */}
+          <div className="mt-4">
+            <div className="mb-2 text-sm font-medium text-slate-600">Quick start:</div>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { emoji: '☕', text: 'Coffee', suggestion: (() => {
+                  const now = new Date();
+                  const currentHour = now.getHours();
+                  
+                  // Smart time based on current hour
+                  if (currentHour < 10) {
+                    return 'Coffee at 10am today';
+                  } else if (currentHour < 14) {
+                    return 'Coffee at 3pm today';
+                  } else if (currentHour < 16) {
+                    return 'Coffee at 4pm today';
+                  } else {
+                    return 'Coffee at 5pm today';
+                  }
+                })() },
+                { emoji: '🌳', text: 'Park w/ kids', suggestion: (() => {
+                  const now = new Date();
+                  const currentHour = now.getHours();
+                  
+                  // Always suggest 10am, but move to tomorrow if it's already passed
+                  if (currentHour < 10) {
+                    return 'Park with kids at 10am today';
+                  } else {
+                    return 'Park with kids at 10am tomorrow';
+                  }
+                })() },
+                { emoji: '🏈', text: 'Game + drinks', suggestion: 'Game + drinks at 7pm tonight' },
+                { emoji: '🥪', text: 'Lunch near work', suggestion: (() => {
+                  const now = new Date();
+                  const currentHour = now.getHours();
+                  
+                  // Always suggest 12pm, but move to tomorrow if it's already passed
+                  if (currentHour < 12) {
+                    return 'Lunch at 12pm today';
+                  } else {
+                    return 'Lunch at 12pm tomorrow';
+                  }
+                })() },
+              ].map((chip, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    setInput(chip.suggestion);
+                    // Scroll to show the input area and create button
+                    setTimeout(() => {
+                      const label = document.querySelector('label');
+                      if (label) {
+                        label.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }
+                    }, 100);
+                  }}
+                  className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+                >
+                  <span>{chip.emoji}</span>
+                  <span>{chip.text}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Time quick-picks */}
+          <div className="mt-4">
+            <div className="mb-2 text-sm font-medium text-slate-600">Time:</div>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { text: 'In 30m', suggestion: 'in 30 minutes' },
+                { 
+                  text: 'Later today', 
+                  suggestion: (() => {
+                    const now = new Date();
+                    const currentHour = now.getHours();
+                    let laterHour;
+                    if (currentHour < 14) laterHour = 16; // 4pm if before 2pm
+                    else if (currentHour < 16) laterHour = 18; // 6pm if 2pm-4pm
+                    else if (currentHour < 18) laterHour = 20; // 8pm if 4pm-6pm
+                    else laterHour = 21; // 9pm if after 6pm
+                    return `at ${laterHour > 12 ? laterHour - 12 : laterHour}${laterHour >= 12 ? 'pm' : 'am'} today`;
+                  })()
+                },
+                { 
+                  text: 'Tonight', 
+                  suggestion: (() => {
+                    const now = new Date();
+                    const currentHour = now.getHours();
+                    let tonightHour = currentHour < 18 ? 21 : 22; // 9pm if before 6pm, 10pm if after
+                    return `at ${tonightHour > 12 ? tonightHour - 12 : tonightHour}${tonightHour >= 12 ? 'pm' : 'am'} tonight`;
+                  })()
+                },
+                { text: 'Tomorrow AM', suggestion: 'at 9am tomorrow' },
+              ].map((chip, index) => (
+                <button
+                  key={index}
+                  onClick={() => {
+                    // Remove ALL time-related phrases more aggressively
+                    let newInput = input
+                      // Remove common time patterns
+                      .replace(/\b(at|around|@)\s+\d{1,2}(:\d{2})?\s*(am|pm|a\.m\.|p\.m\.)\b/gi, '')
+                      .replace(/\b(in|for)\s+\d+\s*(minutes?|mins?|hours?|hrs?)\b/gi, '')
+                      .replace(/\b(now|today|tomorrow|tonight|morning|afternoon|evening|later today)\b/gi, '')
+                      .replace(/\b(am|pm|a\.m\.|p\.m\.)\b/gi, '')
+                      // Clean up extra spaces and punctuation
+                      .replace(/\s+/g, ' ')
+                      .replace(/\s*[?.,]\s*$/, '')
+                      .trim();
+                    
+                    const finalInput = newInput + (newInput ? ' ' : '') + chip.suggestion;
+                    setInput(finalInput);
+                  }}
+                  className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+                >
+                  <span>{chip.text}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Live Preview Card */}
           {input && (
             <div id="live-preview-card" className="mt-4 rounded-2xl border border-slate-200 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-6 shadow-lg backdrop-blur-sm">
@@ -715,28 +846,56 @@ export default function CreateInvitePage() {
                         {selectedEmoji}
                       </div>
                     )}
-                    <h1 className="text-3xl font-bold text-slate-900 flex flex-col items-center gap-2">
-                      {parsed.title ? (
-                        <>
-                          <div className="text-lg font-medium text-slate-600">{hostName || 'A friend'} would love to see you at</div>
-                          <div className="text-3xl font-bold">{parsed.title}</div>
-                        </>
-                      ) : (
-                        'What are you doing?'
+                    <div className="text-center space-y-2">
+                      {/* Host line - muted */}
+                      {parsed.title && (
+                        <div className="text-base text-slate-500">
+                          {hostName || 'A friend'} is heading to…
+                        </div>
                       )}
-                    </h1>
+                      
+                      {/* Big title */}
+                      <h1 className="text-3xl font-bold text-slate-900">
+                        {parsed.title || 'What are you doing?'}
+                      </h1>
+                      
+                      {/* Friendly invite line */}
+                      {parsed.title && (
+                        <div className="text-sm italic text-slate-500">
+                          If you're free, swing by ✨
+                        </div>
+                      )}
+                    </div>
                   </div>
                   {parsed.title && (
-                    <div className="flex items-center justify-center gap-2 mb-3">
+                    <div className="flex justify-center mb-3">
                       <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">
                         {detectedCircle}
-                      </span>
-                      <span className="text-sm text-slate-600">
-                        Come if you&apos;re free ✨
                       </span>
                     </div>
                   )}
                 </div>
+
+                {/* Time */}
+                {parsed.start ? (
+                  <div className="flex items-center justify-center gap-2 text-slate-600 mb-3">
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="font-medium">
+                      {parsed.start.toLocaleDateString(undefined, { 
+                        weekday: 'short', 
+                        month: 'short', 
+                        day: 'numeric' 
+                      })}, {formatTimeDisplay(parsed.start)}
+                      {parsed.end && ` – ${formatTimeDisplay(parsed.end)}`}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="text-slate-400 italic mb-3">
+                    Add a time to see when this happens
+                  </div>
+                )}
 
                 {/* Emoji Control */}
                 {parsed.emoji && (
@@ -768,27 +927,6 @@ export default function CreateInvitePage() {
                         </button>
                       </div>
                     ) : null}
-                  </div>
-                )}
-
-                {/* Time */}
-                {parsed.start ? (
-                  <div className="flex items-center justify-center gap-2 text-slate-600">
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span className="font-medium">
-                      {parsed.start.toLocaleDateString(undefined, { 
-                        weekday: 'short', 
-                        month: 'short', 
-                        day: 'numeric' 
-                      })}, {formatTimeDisplay(parsed.start)}
-                      {parsed.end && ` – ${formatTimeDisplay(parsed.end)}`}
-                    </span>
-                  </div>
-                ) : (
-                  <div className="text-slate-400 italic">
-                    Add a time to see when this happens
                   </div>
                 )}
 

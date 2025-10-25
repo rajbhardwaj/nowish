@@ -370,12 +370,15 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
           .select('state, guest_name')
           .eq('invite_id', inviteId);
 
-        if (!rsvpError && rsvpData) {
+        if (!rsvpError && rsvpData && invite) {
           console.log('RSVP data:', rsvpData); // Debug log
           const counts = { join: 0, maybe: 0, decline: 0 };
           const names = { join: [] as string[], maybe: [] as string[] };
           
-          rsvpData.forEach(rsvp => {
+          // Filter out the host from RSVP counts (host is automatically added as RSVP)
+          const guestRsvps = rsvpData.filter(rsvp => rsvp.guest_name !== invite.host_name);
+          
+          guestRsvps.forEach(rsvp => {
             if (rsvp.state === 'join') {
               counts.join++;
               // Use guest_name if available, otherwise use email username
@@ -442,43 +445,56 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
           <div className="absolute inset-0 bg-gradient-to-br from-blue-100/10 via-transparent to-purple-100/10"></div>
           
           <div className="relative space-y-4 text-center">
-            {/* Title with emoji */}
-            <div className="space-y-2">
-              <div className="text-center">
-                <div className="bounce-emoji text-5xl mb-4">
-                  {detectEmojiFromTitle(invite.title)}
-                </div>
-                <h1 className="text-3xl font-bold text-slate-900 flex flex-col items-center gap-2">
-                  {invite.host_name ? (
-                    <>
-                      <div className="text-lg font-medium text-slate-600">{invite.host_name} would love to see you at</div>
-                      <div className="text-3xl font-bold">{invite.title.replace(/^[^\w\s]*\s*/, '')}</div>
-                    </>
-                  ) : (
-                    invite.title
-                  )}
-                </h1>
+            {/* Host line - muted */}
+            {invite.host_name && (
+              <div className="text-base text-slate-500">
+                {invite.host_name} is heading to…
               </div>
-              <p className="text-lg text-slate-600">
-                {formatTimeNicely(invite.window_start, invite.window_end)}
-              </p>
+            )}
+            
+            {/* Big title with emoji */}
+            <div className="space-y-3">
+              <div className="bounce-emoji text-5xl">
+                {detectEmojiFromTitle(invite.title)}
+              </div>
+              <h1 className="text-4xl font-bold text-slate-900">
+                {invite.title.replace(/^[^\w\s]*\s*/, '')}
+              </h1>
             </div>
             
-            {/* RSVP Counts */}
-            {(rsvpCounts.join > 0 || rsvpCounts.maybe > 0 || rsvpCounts.decline > 0) && (
+            {/* Time and location */}
+            <div className="text-lg text-slate-700">
+              {formatTimeNicely(invite.window_start, invite.window_end)}
+            </div>
+            
+            {/* Friendly invite line */}
+            <div className="text-sm italic text-slate-500">
+              If you're free, swing by ✨
+            </div>
+            
+            {/* Attendance strip */}
+            {rsvpCounts.join <= 1 ? (
+              <div className="flex justify-center">
+                <div className="inline-block rounded-lg border border-slate-200 bg-slate-50 px-2 py-1">
+                  <div className="text-sm text-slate-600">
+                    Open invite — be the first to join!
+                  </div>
+                </div>
+              </div>
+            ) : (
               <div className="rounded-xl border border-blue-200/50 bg-blue-50/50 px-4 py-3 backdrop-blur-sm">
-                <div className="flex flex-wrap justify-center gap-4 text-sm">
-                  {rsvpCounts.join > 0 && (
-                    <span className="font-medium text-green-700">
-                      👥 {formatNamesList(rsvpNames.join)} in
-                    </span>
-                  )}
-                  {rsvpCounts.maybe > 0 && (
-                    <span className="font-medium text-amber-700">
-                      {formatNamesList(rsvpNames.maybe)} maybe
-                    </span>
+                <div className="text-sm text-green-700 font-medium">
+                  {rsvpCounts.join === 2 ? (
+                    `${invite.host_name} & ${rsvpNames.join[0]} are in`
+                  ) : (
+                    `${invite.host_name}, ${rsvpNames.join[0]}, & ${rsvpCounts.join - 2} others are in`
                   )}
                 </div>
+                {rsvpCounts.maybe > 0 && (
+                  <div className="text-sm text-amber-700 mt-1">
+                    {formatNamesList(rsvpNames.maybe)} maybe
+                  </div>
+                )}
               </div>
             )}
           </div>
