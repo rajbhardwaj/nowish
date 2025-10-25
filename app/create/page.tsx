@@ -551,8 +551,11 @@ export default function CreateInvitePage() {
           guest_name: hostDisplayName,
         });
       
+      // Detect user's timezone for OpenGraph image
+      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      
       const base = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://nowish.vercel.app');
-      const url = `${base}/invite/${id}`;
+      const url = `${base}/invite/${id}?tz=${encodeURIComponent(userTimezone)}`;
       setLink(url);
       setHasEditedAfterCreation(false); // Reset the flag since we have a new invite
       setBaselineState({ input, hostName, circle }); // Set baseline state

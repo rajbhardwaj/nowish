@@ -29,43 +29,49 @@ function formatTimeDisplay(date: Date): string {
   return timeString;
 }
 
-function formatWhen(startISO: string, endISO: string): string {
+function formatWhen(startISO: string, endISO: string, timezone?: string): string {
   const start = new Date(startISO);
   const end = new Date(endISO);
 
-  // Use the same timezone-aware formatting as the invite card
-  const timeOptions: Intl.DateTimeFormatOptions = {
+  // Use provided timezone or default to Pacific time
+  const tz = timezone || 'America/Los_Angeles';
+  
+  const day = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz,
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  }).format(start);
+
+  const t = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz,
     hour: 'numeric',
     minute: '2-digit',
     hour12: true
-  };
-  
-  const startTime = start.toLocaleTimeString(undefined, timeOptions);
-  const endTime = end.toLocaleTimeString(undefined, timeOptions);
+  });
+
+  const startTime = t.format(start);
+  const endTime = t.format(end);
   
   // Format times according to style guide (remove :00 minutes)
   const formatTime = (time: string) => time.replace(':00', '');
   const startFormatted = formatTime(startTime);
   const endFormatted = formatTime(endTime);
   
-  // Format date
-  const dateOptions: Intl.DateTimeFormatOptions = {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  };
-  const dateFormatted = new Intl.DateTimeFormat(undefined, dateOptions).format(start);
-  
-  return `${dateFormatted}, ${startFormatted} – ${endFormatted}`;
+  return `${day}, ${startFormatted} – ${endFormatted}`;
 }
 
 export default async function Image({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   try {
     const { id } = await params;
+    const search = await searchParams;
+    const timezone = search.tz as string;
     
     // Minimal supabase client for read-only fetch
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -83,7 +89,7 @@ export default async function Image({
 
     // Fallbacks if not found
     const title = data?.title ?? 'Nowish Invite';
-    const when = data ? formatWhen(data.window_start, data.window_end) : 'Happening soon';
+    const when = data ? formatWhen(data.window_start, data.window_end, timezone) : 'Happening soon';
     const hostName = data?.host_name ?? 'Someone';
     
     // Use the same emoji detection logic as the RSVP card
