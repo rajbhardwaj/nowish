@@ -396,19 +396,9 @@ export default function CreateInvitePage() {
   const [link, setLink] = useState<string | null>(null);
   const [selectedEmoji, setSelectedEmoji] = useState<string | null>(null);
   const [emojiManuallyRemoved, setEmojiManuallyRemoved] = useState(false);
-  const [currentTipIndex, setCurrentTipIndex] = useState(0);
   const [circleManuallyChanged, setCircleManuallyChanged] = useState(false);
   const [hasEditedAfterCreation, setHasEditedAfterCreation] = useState(false);
   const [baselineState, setBaselineState] = useState<{input: string, hostName: string, circle: Circle} | null>(null);
-
-  const rotatingTips = [
-    'Try "Coffee at 3pm today"',
-    'Try "Dinner tomorrow at 7:30pm"',
-    'Try "Park with kids, 3-5p"',
-    'Try "Movie night Friday 8p-10p"',
-    'Try "Brunch Sunday 10am"',
-    'Try "Drinks after work 6pm"'
-  ];
 
   // auth
   useEffect(() => {
@@ -462,15 +452,6 @@ export default function CreateInvitePage() {
     }
   }, [input, parsed.emoji]);
 
-  // Rotate tips every 3 seconds when input is empty
-  useEffect(() => {
-    if (!input) {
-      const interval = setInterval(() => {
-        setCurrentTipIndex((prev) => (prev + 1) % rotatingTips.length);
-      }, 3000);
-      return () => clearInterval(interval);
-    }
-  }, [input, rotatingTips.length]);
 
   // Detect if user has edited after creating an invite
   useEffect(() => {
@@ -671,9 +652,8 @@ export default function CreateInvitePage() {
         </div>
       )}
 
-      <header className="space-y-2">
+      <header>
         <h1 className="text-4xl font-bold tracking-tight text-slate-900">What&apos;s happening?</h1>
-        <p className="text-slate-600">Type it like a text; we&apos;ll make it look good.</p>
       </header>
 
       <div className="rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-lg backdrop-blur-sm">
@@ -683,8 +663,8 @@ export default function CreateInvitePage() {
             Tell us about it
           </label>
           <input
-            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
-            placeholder="Type your invite here..."
+            className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 placeholder:text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+            placeholder="Type it like a text; we'll make it look good"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onClick={handleInputFocus}
@@ -698,12 +678,6 @@ export default function CreateInvitePage() {
             </div>
           )}
 
-          {/* Rotating tips when input is empty */}
-          {!input && (
-            <div className="mt-2 text-sm text-slate-500 transition-opacity duration-500">
-              💡 {rotatingTips[currentTipIndex]}
-            </div>
-          )}
 
           {/* Activity chips */}
           <div className="mt-4">
