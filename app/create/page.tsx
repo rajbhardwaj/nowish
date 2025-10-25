@@ -794,7 +794,7 @@ export default function CreateInvitePage() {
                   suggestion: (() => {
                     const now = new Date();
                     const currentHour = now.getHours();
-                    let tonightHour = currentHour < 18 ? 21 : 22; // 9pm if before 6pm, 10pm if after
+                    const tonightHour = currentHour < 18 ? 21 : 22; // 9pm if before 6pm, 10pm if after
                     return `at ${tonightHour > 12 ? tonightHour - 12 : tonightHour}${tonightHour >= 12 ? 'pm' : 'am'} tonight`;
                   })()
                 },
@@ -804,7 +804,7 @@ export default function CreateInvitePage() {
                   key={index}
                   onClick={() => {
                     // Remove ALL time-related phrases more aggressively
-                    let newInput = input
+                    const newInput = input
                       // Remove common time patterns
                       .replace(/\b(at|around|@)\s+\d{1,2}(:\d{2})?\s*(am|pm|a\.m\.|p\.m\.)\b/gi, '')
                       .replace(/\b(in|for)\s+\d+\s*(minutes?|mins?|hours?|hrs?)\b/gi, '')
@@ -862,7 +862,7 @@ export default function CreateInvitePage() {
                       {/* Friendly invite line */}
                       {parsed.title && (
                         <div className="text-sm italic text-slate-500">
-                          If you're free, swing by ✨
+                          If you&apos;re free, swing by ✨
                         </div>
                       )}
                     </div>

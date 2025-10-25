@@ -15,20 +15,6 @@ type InviteRow = {
   timezone: string | null;
 };
 
-function formatTimeDisplay(date: Date): string {
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
-  
-  if (hours === 0 && minutes === 0) return 'Midnight';
-  if (hours === 12 && minutes === 0) return 'Noon';
-  
-  const timeString = date.toLocaleTimeString(undefined, { 
-    hour: 'numeric', 
-    minute: minutes === 0 ? undefined : '2-digit'
-  });
-  
-  return timeString;
-}
 
 function formatWhen(startISO: string, endISO: string, timezone?: string): string {
   const start = new Date(startISO);
@@ -252,7 +238,7 @@ export default async function Image({
                   justifyContent: 'center',
                 }}
               >
-                If you're free, swing by ✨
+                If you&apos;re free, swing by ✨
               </div>
               
               <div

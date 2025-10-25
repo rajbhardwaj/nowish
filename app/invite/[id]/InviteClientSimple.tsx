@@ -370,13 +370,13 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
           .select('state, guest_name')
           .eq('invite_id', inviteId);
 
-        if (!rsvpError && rsvpData && invite) {
+        if (!rsvpError && rsvpData && data) {
           console.log('RSVP data:', rsvpData); // Debug log
           const counts = { join: 0, maybe: 0, decline: 0 };
           const names = { join: [] as string[], maybe: [] as string[] };
           
           // Filter out the host from RSVP counts (host is automatically added as RSVP)
-          const guestRsvps = rsvpData.filter(rsvp => rsvp.guest_name !== invite.host_name);
+          const guestRsvps = rsvpData.filter(rsvp => rsvp.guest_name !== data.host_name);
           
           guestRsvps.forEach(rsvp => {
             if (rsvp.state === 'join') {
@@ -469,7 +469,7 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
             
             {/* Friendly invite line */}
             <div className="text-sm italic text-slate-500">
-              If you're free, swing by ✨
+              If you&apos;re free, swing by ✨
             </div>
             
             {/* Attendance strip */}
