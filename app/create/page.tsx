@@ -554,8 +554,18 @@ export default function CreateInvitePage() {
       // Detect user's timezone for OpenGraph image
       const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       
+      // Store timezone in database (ignore errors if column doesn't exist yet)
+      try {
+        await supabase
+          .from('open_invites')
+          .update({ timezone: userTimezone })
+          .eq('id', id);
+      } catch (error) {
+        console.log('Timezone column not found, skipping timezone storage:', error);
+      }
+      
       const base = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://nowish.vercel.app');
-      const url = `${base}/invite/${id}?tz=${encodeURIComponent(userTimezone)}`;
+      const url = `${base}/invite/${id}`;
       setLink(url);
       setHasEditedAfterCreation(false); // Reset the flag since we have a new invite
       setBaselineState({ input, hostName, circle }); // Set baseline state

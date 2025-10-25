@@ -12,6 +12,7 @@ type InviteRow = {
   window_start: string;
   window_end: string;
   host_name: string | null;
+  timezone: string | null;
 };
 
 function formatTimeDisplay(date: Date): string {
@@ -63,15 +64,11 @@ function formatWhen(startISO: string, endISO: string, timezone?: string): string
 
 export default async function Image({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   try {
     const { id } = await params;
-    const search = await searchParams;
-    const timezone = search.tz as string;
     
     // Minimal supabase client for read-only fetch
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -83,13 +80,13 @@ export default async function Image({
     // Fetch invite
     const { data } = await supabase
       .from('open_invites')
-      .select('id,title,window_start,window_end,host_name')
+      .select('id,title,window_start,window_end,host_name,timezone')
       .eq('id', id)
       .maybeSingle<InviteRow>();
 
     // Fallbacks if not found
     const title = data?.title ?? 'Nowish Invite';
-    const when = data ? formatWhen(data.window_start, data.window_end, timezone) : 'Happening soon';
+    const when = data ? formatWhen(data.window_start, data.window_end, data.timezone || undefined) : 'Happening soon';
     const hostName = data?.host_name ?? 'Someone';
     
     // Use the same emoji detection logic as the RSVP card
