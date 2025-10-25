@@ -178,10 +178,10 @@ export default async function Image({
           <div
             style={{
               width: 800,
-              height: 400,
+              height: 500,
               background: 'white',
               borderRadius: '24px',
-              padding: '48px',
+              padding: '60px',
               boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
               display: 'flex',
               flexDirection: 'column',
@@ -230,10 +230,10 @@ export default async function Image({
               {/* Host line */}
               <div
                 style={{
-                  fontSize: '20px',
+                  fontSize: '28px',
                   fontWeight: '400',
-                  color: '#94a3b8',
-                  marginBottom: '8px',
+                  color: '#64748b',
+                  marginBottom: '12px',
                   fontFamily: 'system-ui, -apple-system, sans-serif',
                   display: 'flex',
                   justifyContent: 'center',
@@ -245,10 +245,10 @@ export default async function Image({
               {/* Main title */}
               <div
                 style={{
-                  fontSize: '48px',
+                  fontSize: '64px',
                   fontWeight: '700',
                   color: '#1e293b',
-                  marginBottom: '16px',
+                  marginBottom: '20px',
                   fontFamily: 'system-ui, -apple-system, sans-serif',
                   display: 'flex',
                   justifyContent: 'center',
@@ -259,9 +259,9 @@ export default async function Image({
               
               <div
                 style={{
-                  fontSize: '24px',
+                  fontSize: '32px',
                   color: '#64748b',
-                  marginBottom: '12px',
+                  marginBottom: '16px',
                   fontFamily: 'system-ui, -apple-system, sans-serif',
                   display: 'flex',
                   justifyContent: 'center',
@@ -272,10 +272,10 @@ export default async function Image({
               
               <div
                 style={{
-                  fontSize: '18px',
+                  fontSize: '24px',
                   fontStyle: 'italic',
-                  color: '#94a3b8',
-                  marginBottom: '8px',
+                  color: '#64748b',
+                  marginBottom: '12px',
                   fontFamily: 'system-ui, -apple-system, sans-serif',
                   display: 'flex',
                   justifyContent: 'center',
@@ -286,8 +286,8 @@ export default async function Image({
               
               <div
                 style={{
-                  fontSize: '16px',
-                  color: '#94a3b8',
+                  fontSize: '20px',
+                  color: '#64748b',
                   fontFamily: 'system-ui, -apple-system, sans-serif',
                   display: 'flex',
                   justifyContent: 'center',
