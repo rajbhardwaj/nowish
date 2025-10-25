@@ -142,7 +142,8 @@ export default async function Image({
         { keywords: ['beach', 'ocean', 'sea'], emoji: '🏖️' },
         { keywords: ['shopping', 'mall', 'store'], emoji: '🛍️' },
         { keywords: ['spa', 'massage', 'relaxation'], emoji: '🧖' },
-        { keywords: ['travel', 'trip', 'vacation'], emoji: '✈️' },
+        { keywords: ['road trip', 'driving'], emoji: '🚗' },
+        { keywords: ['travel', 'vacation'], emoji: '✈️' },
         { keywords: ['study', 'learning', 'class'], emoji: '📖' },
         { keywords: ['work', 'office', 'meeting'], emoji: '💼' },
       ];
