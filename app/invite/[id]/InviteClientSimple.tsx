@@ -146,6 +146,7 @@ function detectEmojiFromTitle(title: string): string {
 
     // Social & Activities
     { keywords: ['walk', 'walking', 'stroll'], emoji: '🚶' },
+    { keywords: ['park with kids', 'park w/ kids'], emoji: '🌳👶🏽' },
     { keywords: ['park', 'outdoor', 'picnic'], emoji: '🌳' },
     { keywords: ['beach', 'ocean', 'sea'], emoji: '🏖️' },
     { keywords: ['shopping', 'mall', 'store'], emoji: '🛍️' },

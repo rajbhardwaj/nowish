@@ -124,6 +124,7 @@ export default async function Image({
 
         // Social & Activities
         { keywords: ['walk', 'walking', 'stroll'], emoji: '🚶' },
+        { keywords: ['park with kids', 'park w/ kids'], emoji: '🌳👶🏽' },
         { keywords: ['park', 'outdoor', 'picnic'], emoji: '🌳' },
         { keywords: ['beach', 'ocean', 'sea'], emoji: '🏖️' },
         { keywords: ['shopping', 'mall', 'store'], emoji: '🛍️' },
@@ -226,27 +227,28 @@ export default async function Image({
                 {emoji || '📅'}
               </div>
               
-              {/* Main text */}
+              {/* Host line */}
               <div
                 style={{
-                  fontSize: '28px',
-                  fontWeight: '500',
-                  color: '#64748b',
-                  marginBottom: '16px',
+                  fontSize: '20px',
+                  fontWeight: '400',
+                  color: '#94a3b8',
+                  marginBottom: '8px',
                   fontFamily: 'system-ui, -apple-system, sans-serif',
                   display: 'flex',
                   justifyContent: 'center',
                 }}
               >
-                If you&apos;re free, swing by ✨
+                {hostName} is heading to…
               </div>
               
+              {/* Main title */}
               <div
                 style={{
                   fontSize: '48px',
                   fontWeight: '700',
                   color: '#1e293b',
-                  marginBottom: '24px',
+                  marginBottom: '16px',
                   fontFamily: 'system-ui, -apple-system, sans-serif',
                   display: 'flex',
                   justifyContent: 'center',
@@ -271,6 +273,20 @@ export default async function Image({
               <div
                 style={{
                   fontSize: '18px',
+                  fontStyle: 'italic',
+                  color: '#94a3b8',
+                  marginBottom: '8px',
+                  fontFamily: 'system-ui, -apple-system, sans-serif',
+                  display: 'flex',
+                  justifyContent: 'center',
+                }}
+              >
+                If you&apos;re free, swing by ✨
+              </div>
+              
+              <div
+                style={{
+                  fontSize: '16px',
                   color: '#94a3b8',
                   fontFamily: 'system-ui, -apple-system, sans-serif',
                   display: 'flex',
