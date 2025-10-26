@@ -218,7 +218,7 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
   
   // Input validation for guest fields
   function validateGuestInputs(): string | null {
-    if (guestEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail.trim())) {
+    if (guestEmail.trim() && !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(guestEmail.trim())) {
       return 'Please enter a valid email address.';
     }
     
@@ -295,7 +295,7 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
         if (guestEmail.trim()) {
           // Sanitize email input
           const sanitizedEmail = guestEmail.trim().toLowerCase();
-          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sanitizedEmail)) {
+          if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(sanitizedEmail)) {
             alert('Please enter a valid email address.');
             setState(null);
             return;
@@ -396,7 +396,7 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
       return;
     }
     
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
       alert('Please enter a valid email address.');
       return;
     }
