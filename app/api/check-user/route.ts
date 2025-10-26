@@ -16,8 +16,7 @@ export async function POST(request: Request) {
     // Check if user exists in auth.users table
     const { data: users, error } = await supabase.auth.admin.listUsers({
       page: 1,
-      perPage: 1,
-      filter: `email.eq.${email}`
+      perPage: 1000 // Get more users to search through
     })
     
     if (error) {
@@ -25,11 +24,13 @@ export async function POST(request: Request) {
       return Response.json({ error: 'Failed to check user' }, { status: 500 })
     }
     
-    const userExists = users && users.users && users.users.length > 0
+    // Find user by email in the results
+    const user = users?.users?.find(u => u.email === email)
+    const userExists = !!user
     
     return Response.json({ 
       exists: userExists,
-      user: userExists ? users.users[0] : null
+      user: user || null
     })
     
   } catch (error) {

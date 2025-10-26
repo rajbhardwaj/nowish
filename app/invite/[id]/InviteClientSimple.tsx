@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 
 // Add styles for animations
@@ -181,15 +181,6 @@ function detectEmojiFromTitle(title: string): string {
 }
 
 // Input sanitization function
-function sanitizeInput(input: string): string {
-  return input
-    .replace(/<[^>]*>/g, '') // Remove all HTML tags (including script tags)
-    .replace(/javascript:/gi, '') // Remove javascript: protocols
-    .replace(/on\w+\s*=\s*[^"'\s>]*/gi, '') // Remove event handlers
-    .replace(/[<>]/g, '') // Remove any remaining angle brackets
-    .trim()
-    .substring(0, 100); // Limit length
-}
 
 export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
   const [state, setState] = useState<string | null>(null);
@@ -218,17 +209,6 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
   const [guestEmail, setGuestEmail] = useState('');
   
   // Input validation for guest fields
-  function validateGuestInputs(): string | null {
-    if (guestEmail.trim() && !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(guestEmail.trim())) {
-      return 'Please enter a valid email address.';
-    }
-    
-    if (guestName.trim() && guestName.length > 50) {
-      return 'Name is too long (max 50 characters).';
-    }
-    
-    return null;
-  }
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [showRipple, setShowRipple] = useState(false);
 
@@ -384,7 +364,7 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
     }
   }
 
-  const fetchInvite = async () => {
+  const fetchInvite = useCallback(async () => {
     try {
       // Fetch invite details
       const { data, error } = await supabase
@@ -458,12 +438,12 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
       console.error('Error in fetchInvite:', err);
       setLoading(false);
     }
-  };
+  }, [inviteId]);
 
   useEffect(() => {
     console.log('Fetching invite for ID:', inviteId);
     fetchInvite();
-  }, [inviteId]);
+  }, [inviteId, fetchInvite]);
 
   if (loading) {
     return (
