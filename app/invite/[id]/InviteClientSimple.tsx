@@ -276,6 +276,8 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
   async function sendRSVP(status: 'join' | 'maybe' | 'decline') {
     if (busy) return;
     
+    console.log('sendRSVP called (logged in user), isLoggedIn:', isLoggedIn);
+    
     // Validate guest inputs if provided
     const validationError = validateGuestInputs();
     if (validationError) {
@@ -303,13 +305,18 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
           }
           
           // Check if this email already exists in the system
-          const { data: existingUser } = await supabase
+          const { data: existingUser, error: existingUserError } = await supabase
             .from('profiles')
             .select('id')
             .eq('email', sanitizedEmail)
             .single();
           
+          console.log('Checking for existing user:', sanitizedEmail);
+          console.log('Existing user result:', existingUser);
+          console.log('Existing user error:', existingUserError);
+          
           if (existingUser) {
+            console.log('User exists, redirecting to login');
             // Store their RSVP choice and redirect to login
             const loginUrl = `/login?next=${encodeURIComponent(`/invite/${inviteId}?rsvp=${status}`)}`;
             window.location.href = loginUrl;
@@ -388,6 +395,8 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
 
   async function sendGuestRSVP(status: 'join' | 'maybe' | 'decline') {
     if (busy) return;
+    
+    console.log('sendGuestRSVP called, isLoggedIn:', isLoggedIn);
     
     const email = guestEmail.trim();
     const name = guestName.trim();
