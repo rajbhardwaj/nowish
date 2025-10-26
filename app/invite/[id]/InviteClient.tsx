@@ -43,7 +43,7 @@ export default function InviteClient({ inviteId }: { inviteId: string }) {
         alert('Please enter your email so the host knows who you are.');
         return;
       }
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
         alert('Please enter a valid email.');
         return;
       }
