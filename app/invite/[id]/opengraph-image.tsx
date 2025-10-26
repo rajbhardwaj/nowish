@@ -105,6 +105,7 @@ export default async function Image({
         { keywords: ['dinner', 'dining'], emoji: '🍽️' },
         { keywords: ['lunch'], emoji: '🥪', workContext: '🥗' }, // Different emoji for work lunch
         { keywords: ['brunch', 'breakfast'], emoji: '🥞' },
+        { keywords: ['game + drinks', 'game and drinks'], emoji: '🏈' },
         { keywords: ['drinks', 'cocktails', 'cocktail', 'bar', 'happy hour'], emoji: '🍸' },
         { keywords: ['beer', 'brewery', 'brewing'], emoji: '🍺' },
         { keywords: ['wine', 'winery', 'tasting'], emoji: '🍷' },

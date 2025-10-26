@@ -99,7 +99,7 @@ const EMOJI_MAPPINGS = [
   { keywords: ['walking', 'walk'], emoji: '🚶' },
   { keywords: ['dog park'], emoji: '🐶' },
   { keywords: ['park with kids'], emoji: '🌳' },
-  { keywords: ['game + drinks', 'game and drinks', 'game + beers', 'game and beers'], emoji: '🍻' },
+  { keywords: ['game + beers', 'game and beers'], emoji: '🍻' },
   { keywords: ['lunch near work'], emoji: '🥪' },
   { keywords: ['ice-cream', 'ice cream'], emoji: '🍦' },
 
