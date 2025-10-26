@@ -680,7 +680,7 @@ export default function CreateInvitePage() {
 
 
           {/* Activity chips */}
-          <div className="mt-4">
+          <div className="mt-6">
             <div className="mb-2 text-sm font-medium text-slate-600">Try one, or just type</div>
             <div className="flex flex-wrap gap-2">
               {[
@@ -726,7 +726,33 @@ export default function CreateInvitePage() {
                 <button
                   key={index}
                   onClick={() => {
-                    setInput(chip.suggestion);
+                    // Check if user has already selected a time chip
+                    const currentInput = input.toLowerCase();
+                    const hasTimeChip = currentInput.includes('in 30 minutes') || 
+                                      currentInput.includes('later today') || 
+                                      currentInput.includes('tonight') || 
+                                      currentInput.includes('tomorrow') ||
+                                      currentInput.includes('at ');
+                    
+                    if (hasTimeChip) {
+                      // Keep existing time, just replace the activity part
+                      const activityOnly = chip.suggestion.split(' at ')[0].split(' in ')[0];
+                      // Find and replace the activity part while keeping the time
+                      let newInput = input;
+                      // Remove any existing activity and add the new one
+                      const timePattern = /(in \d+ minutes? today|at \d+[ap]m tomorrow|at \d+[ap]m today|at \d+[ap]m|later today|tonight)/i;
+                      const timeMatch = input.match(timePattern);
+                      if (timeMatch) {
+                        newInput = activityOnly + ' ' + timeMatch[0];
+                      } else {
+                        newInput = activityOnly;
+                      }
+                      setInput(newInput);
+                    } else {
+                      // Use full suggestion with time
+                      setInput(chip.suggestion);
+                    }
+                    
                     // Scroll to show the input area and create button
                     setTimeout(() => {
                       const label = document.querySelector('label');
@@ -746,10 +772,10 @@ export default function CreateInvitePage() {
 
           {/* Time quick-picks */}
           <div className="mt-4">
-            <div className="mb-2 text-sm font-medium text-slate-600">Time:</div>
+            <div className="mb-2 text-sm font-medium text-slate-600">Time</div>
             <div className="flex flex-wrap gap-2">
               {[
-                { text: 'In 30m', suggestion: 'in 30 minutes' },
+                { text: 'In 30m', suggestion: 'in 30 minutes today' },
                 { 
                   text: 'Later today', 
                   suggestion: (() => {
@@ -773,24 +799,48 @@ export default function CreateInvitePage() {
                   })()
                 },
                 { text: 'Tomorrow AM', suggestion: 'at 9am tomorrow' },
+                { text: 'Tomorrow night', suggestion: 'at 8pm tomorrow' },
               ].map((chip, index) => (
                 <button
                   key={index}
                   onClick={() => {
-                    // Remove ALL time-related phrases more aggressively
-                    const newInput = input
-                      // Remove common time patterns
-                      .replace(/\b(at|around|@)\s+\d{1,2}(:\d{2})?\s*(am|pm|a\.m\.|p\.m\.)\b/gi, '')
-                      .replace(/\b(in|for)\s+\d+\s*(minutes?|mins?|hours?|hrs?)\b/gi, '')
-                      .replace(/\b(now|today|tomorrow|tonight|morning|afternoon|evening|later today)\b/gi, '')
-                      .replace(/\b(am|pm|a\.m\.|p\.m\.)\b/gi, '')
-                      // Clean up extra spaces and punctuation
-                      .replace(/\s+/g, ' ')
-                      .replace(/\s*[?.,]\s*$/, '')
-                      .trim();
+                    // Check if user has already selected an activity chip
+                    const currentInput = input.toLowerCase();
+                    const hasActivityChip = currentInput.includes('coffee') || 
+                                          currentInput.includes('park with kids') || 
+                                          currentInput.includes('game + drinks') || 
+                                          currentInput.includes('lunch near work');
                     
-                    const finalInput = newInput + (newInput ? ' ' : '') + chip.suggestion;
-                    setInput(finalInput);
+                    if (hasActivityChip) {
+                      // Keep existing activity, just replace the time part
+                      const timeOnly = chip.suggestion;
+                      // Find and replace the time part while keeping the activity
+                      let newInput = input;
+                      // Remove any existing time and add the new one
+                      const activityPattern = /(coffee|park with kids|game \+ drinks|lunch near work)/i;
+                      const activityMatch = input.match(activityPattern);
+                      if (activityMatch) {
+                        newInput = activityMatch[0] + ' ' + timeOnly;
+                      } else {
+                        newInput = timeOnly;
+                      }
+                      setInput(newInput);
+                    } else {
+                      // Remove ALL time-related phrases more aggressively
+                      const newInput = input
+                        // Remove common time patterns
+                        .replace(/\b(at|around|@)\s+\d{1,2}(:\d{2})?\s*(am|pm|a\.m\.|p\.m\.)\b/gi, '')
+                        .replace(/\b(in|for)\s+\d+\s*(minutes?|mins?|hours?|hrs?)\b/gi, '')
+                        .replace(/\b(now|today|tomorrow|tonight|morning|afternoon|evening|later today)\b/gi, '')
+                        .replace(/\b(am|pm|a\.m\.|p\.m\.)\b/gi, '')
+                        // Clean up extra spaces and punctuation
+                        .replace(/\s+/g, ' ')
+                        .replace(/\s*[?.,]\s*$/, '')
+                        .trim();
+                      
+                      const finalInput = newInput + (newInput ? ' ' : '') + chip.suggestion;
+                      setInput(finalInput);
+                    }
                   }}
                   className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-colors"
                 >
