@@ -258,18 +258,7 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
       const { data: { user } } = await supabase.auth.getUser();
       setIsLoggedIn(!!user);
       
-      // Check if they have an RSVP to apply after login
-      const urlParams = new URLSearchParams(window.location.search);
-      const rsvpStatus = urlParams.get('rsvp');
-      
-      if (user && rsvpStatus && ['join', 'maybe', 'decline'].includes(rsvpStatus)) {
-        // Automatically apply their RSVP choice
-        await sendRSVP(rsvpStatus as 'join' | 'maybe' | 'decline');
-        
-        // Clean up the URL
-        const newUrl = window.location.pathname;
-        window.history.replaceState({}, '', newUrl);
-      }
+      // No automatic RSVP application needed - all RSVPs are guest RSVPs
     })();
   }, []);
 
@@ -278,79 +267,18 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
     
     console.log('sendRSVP called (logged in user), isLoggedIn:', isLoggedIn);
     
-    // Validate guest inputs if provided
-    const validationError = validateGuestInputs();
-    if (validationError) {
-      alert(validationError);
-      return;
-    }
-    
     setBusy(true);
     try {
       setState(status);
       
-      // Get current user email (should be logged in at this point)
+      // Get current user (should be logged in at this point)
       const { data: { user } } = await supabase.auth.getUser();
       const userEmail = user?.email;
       
       if (!userEmail) {
-        // Check if they provided an email in the form
-        if (guestEmail.trim()) {
-          // Sanitize email input
-          const sanitizedEmail = guestEmail.trim().toLowerCase();
-          if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(sanitizedEmail)) {
-            alert('Please enter a valid email address.');
-            setState(null);
-            return;
-          }
-          
-          // Check if this email already exists in the system
-          const { data: existingUser, error: existingUserError } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('email', sanitizedEmail)
-            .single();
-          
-          console.log('Checking for existing user:', sanitizedEmail);
-          console.log('Existing user result:', existingUser);
-          console.log('Existing user error:', existingUserError);
-          
-          if (existingUser) {
-            console.log('User exists, redirecting to login');
-            // Store their RSVP choice and redirect to login
-            const loginUrl = `/login?next=${encodeURIComponent(`/invite/${inviteId}?rsvp=${status}`)}`;
-            window.location.href = loginUrl;
-            return;
-          }
-          
-          // Email doesn't exist, allow guest RSVP
-          const sanitizedName = guestName.trim() ? sanitizeInput(guestName.trim()) : null;
-          
-          const { data, error } = await supabase
-            .from('rsvps')
-            .upsert({
-              invite_id: inviteId,
-              state: status,
-              guest_email: sanitizedEmail,
-              guest_name: sanitizedName,
-            }, { onConflict: 'invite_id,guest_email' })
-            .select();
-          
-          if (error) {
-            console.error('Failed to save guest RSVP:', error);
-            alert(`Could not save RSVP: ${error.message}`);
-            setState(null);
-          } else {
-            console.log('Guest RSVP saved successfully:', data);
-            setShowSuccess(true);
-            setTimeout(() => setShowSuccess(false), 2000);
-          }
-          return;
-        } else {
-          alert('Please log in to RSVP.');
-          setState(null);
-          return;
-        }
+        alert('You need to be signed in to RSVP.');
+        setState(null);
+        return;
       }
       
       // Get user's display name from their profile
@@ -374,16 +302,21 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
         .select();
       
       console.log('RSVP save result:', { data, error });
+      console.log('Saved with email:', userEmail);
+      console.log('Saved with name:', displayName);
+      console.log('Saved with status:', status);
       
       if (error) {
         console.error('Failed to save RSVP:', error);
         alert(`Could not save RSVP: ${error.message}`);
         setState(null);
-      } else {
-        console.log('RSVP saved successfully:', data);
-        setShowSuccess(true);
-        setTimeout(() => setShowSuccess(false), 2000);
-      }
+            } else {
+              console.log('RSVP saved successfully:', data);
+              setShowSuccess(true);
+              setTimeout(() => setShowSuccess(false), 2000);
+              // Refresh the invite data to show updated RSVPs
+              fetchInvite();
+            }
     } catch (err) {
       console.error('RSVP error:', err);
       alert(`Unexpected error: ${(err as Error).message}`);
@@ -396,9 +329,7 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
   async function sendGuestRSVP(status: 'join' | 'maybe' | 'decline') {
     if (busy) return;
     
-    console.log('sendGuestRSVP called, isLoggedIn:', isLoggedIn);
-    
-    const email = guestEmail.trim();
+    const email = guestEmail.trim().toLowerCase();
     const name = guestName.trim();
     
     if (!email) {
@@ -411,24 +342,7 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
       return;
     }
     
-    // Check if this email already exists in the system
-    const { data: existingUser, error: existingUserError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('email', email)
-      .single();
-    
-    console.log('Checking for existing user:', email);
-    console.log('Existing user result:', existingUser);
-    console.log('Existing user error:', existingUserError);
-    
-    if (existingUser) {
-      console.log('User exists, redirecting to login');
-      // Store their RSVP choice and redirect to login
-      const loginUrl = `/login?next=${encodeURIComponent(`/invite/${inviteId}?rsvp=${status}`)}`;
-      window.location.href = loginUrl;
-      return;
-    }
+    // All RSVPs work as guest RSVPs - no login required
     
     setBusy(true);
     try {
@@ -446,16 +360,21 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
         .select();
       
       console.log('Guest RSVP save result:', { data, error });
+      console.log('Guest RSVP status:', status);
+      console.log('Guest RSVP email:', email);
+      console.log('Guest RSVP name:', name);
       
       if (error) {
         console.error('Failed to save guest RSVP:', error);
         alert(`Could not save RSVP: ${error.message}`);
         setState(null);
-      } else {
-        console.log('Guest RSVP saved successfully:', data);
-        setShowSuccess(true);
-        setTimeout(() => setShowSuccess(false), 2000);
-      }
+        } else {
+          console.log('Guest RSVP saved successfully:', data);
+          setShowSuccess(true);
+          setTimeout(() => setShowSuccess(false), 2000);
+          // Refresh the invite data to show updated RSVPs
+          fetchInvite();
+        }
     } catch (err) {
       console.error('Guest RSVP error:', err);
       alert(`Unexpected error: ${(err as Error).message}`);
@@ -465,69 +384,84 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
     }
   }
 
+  const fetchInvite = async () => {
+    try {
+      // Fetch invite details
+      const { data, error } = await supabase
+        .from('open_invites')
+        .select('id, title, window_start, window_end, host_name')
+        .eq('id', inviteId)
+        .single();
+      
+      console.log('Fetch result:', { data, error });
+      
+      if (error) {
+        console.error('Error fetching invite:', error);
+        setLoading(false);
+        return;
+      }
+      
+      setInvite(data);
+
+      // Fetch RSVP counts and names
+      const { data: rsvpData, error: rsvpError } = await supabase
+        .from('rsvps')
+        .select('state, guest_name')
+        .eq('invite_id', inviteId);
+
+      if (!rsvpError && rsvpData && data) {
+        console.log('RSVP data:', rsvpData); // Debug log
+        const counts = { join: 0, maybe: 0, decline: 0 };
+        const names = { join: [] as string[], maybe: [] as string[] };
+        
+        // Filter out the host from RSVP counts
+        // Since the host is Major and there's a Major in the RSVP list, we need to remove one
+        // We'll remove the first Major RSVP (assuming it's the host's auto-RSVP)
+        const hostName = data.host_name;
+        const guestRsvps = rsvpData.filter((rsvp, index) => {
+          // If this is the first RSVP with the host's name, remove it (it's the host's auto-RSVP)
+          if (rsvp.guest_name === hostName && index === rsvpData.findIndex(r => r.guest_name === hostName)) {
+            console.log('Filtering out host RSVP:', rsvp);
+            return false;
+          }
+          return true;
+        });
+        
+        console.log('All RSVP data before filtering:', rsvpData);
+        console.log('Filtered guest RSVPs:', guestRsvps);
+        
+        guestRsvps.forEach((rsvp) => {
+          if (rsvp.state === 'join') {
+            counts.join++;
+            // Use guest_name if available, otherwise use email username
+            const displayName = rsvp.guest_name || 'Someone';
+            names.join.push(displayName);
+          } else if (rsvp.state === 'maybe') {
+            counts.maybe++;
+            const displayName = rsvp.guest_name || 'Someone';
+            names.maybe.push(displayName);
+          } else if (rsvp.state === 'decline') {
+            counts.decline++;
+            // Also add decline names for potential future display
+            const displayName = rsvp.guest_name || 'Someone';
+            names.decline = names.decline || [];
+            names.decline.push(displayName);
+          }
+        });
+        
+        setRsvpCounts(counts);
+        setRsvpNames(names);
+      }
+      
+      setLoading(false);
+    } catch (err) {
+      console.error('Error in fetchInvite:', err);
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     console.log('Fetching invite for ID:', inviteId);
-    
-    const fetchInvite = async () => {
-      try {
-        // Fetch invite details
-        const { data, error } = await supabase
-          .from('open_invites')
-          .select('id, title, window_start, window_end, host_name')
-          .eq('id', inviteId)
-          .single();
-        
-        console.log('Fetch result:', { data, error });
-        
-        if (error) {
-          console.error('Error fetching invite:', error);
-          setLoading(false);
-          return;
-        }
-        
-        setInvite(data);
-
-        // Fetch RSVP counts and names
-        const { data: rsvpData, error: rsvpError } = await supabase
-          .from('rsvps')
-          .select('state, guest_name')
-          .eq('invite_id', inviteId);
-
-        if (!rsvpError && rsvpData && data) {
-          console.log('RSVP data:', rsvpData); // Debug log
-          const counts = { join: 0, maybe: 0, decline: 0 };
-          const names = { join: [] as string[], maybe: [] as string[] };
-          
-          // Filter out the host from RSVP counts (host is automatically added as RSVP)
-          const guestRsvps = rsvpData.filter(rsvp => rsvp.guest_name !== data.host_name);
-          
-          guestRsvps.forEach(rsvp => {
-            if (rsvp.state === 'join') {
-              counts.join++;
-              // Use guest_name if available, otherwise use email username
-              const displayName = rsvp.guest_name || 'Someone';
-              console.log('Join RSVP:', { guest_name: rsvp.guest_name, displayName }); // Debug log
-              names.join.push(displayName);
-            } else if (rsvp.state === 'maybe') {
-              counts.maybe++;
-              const displayName = rsvp.guest_name || 'Someone';
-              names.maybe.push(displayName);
-            } else if (rsvp.state === 'decline') {
-              counts.decline++;
-            }
-          });
-          
-          setRsvpCounts(counts);
-          setRsvpNames(names);
-        }
-        
-        setLoading(false);
-      } catch (err) {
-        console.error('Exception fetching invite:', err);
-        setLoading(false);
-      }
-    };
-    
     fetchInvite();
   }, [inviteId]);
 
@@ -596,7 +530,7 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
             </div>
             
             {/* Attendance strip */}
-            {rsvpCounts.join <= 1 ? (
+            {rsvpCounts.join < 1 ? (
               <div className="flex justify-center">
                 <div className="inline-block rounded-lg border border-slate-200 bg-slate-50 px-2 py-1">
                   <div className="text-sm text-slate-600">
@@ -607,10 +541,12 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
             ) : (
               <div className="rounded-xl border border-blue-200/50 bg-blue-50/50 px-4 py-3 backdrop-blur-sm">
                 <div className="text-sm text-green-700 font-medium">
-                  {rsvpCounts.join === 2 ? (
+                  {rsvpCounts.join === 1 ? (
                     `${invite.host_name} & ${rsvpNames.join[0]} are in`
+                  ) : rsvpCounts.join === 2 ? (
+                    `${invite.host_name}, ${rsvpNames.join[0]}, & ${rsvpNames.join[1]} are in`
                   ) : (
-                    `${invite.host_name}, ${rsvpNames.join[0]}, & ${rsvpCounts.join - 2} others are in`
+                    `${invite.host_name}, ${rsvpNames.join[0]}, & ${rsvpCounts.join - 1} others are in`
                   )}
                 </div>
                 {rsvpCounts.maybe > 0 && (
