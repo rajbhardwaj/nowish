@@ -179,6 +179,17 @@ function detectEmojiFromTitle(title: string): string {
   return '📅'; // Default calendar emoji
 }
 
+// Input sanitization function
+function sanitizeInput(input: string): string {
+  return input
+    .replace(/<[^>]*>/g, '') // Remove all HTML tags (including script tags)
+    .replace(/javascript:/gi, '') // Remove javascript: protocols
+    .replace(/on\w+\s*=\s*[^"'\s>]*/gi, '') // Remove event handlers
+    .replace(/[<>]/g, '') // Remove any remaining angle brackets
+    .trim()
+    .substring(0, 100); // Limit length
+}
+
 export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
   const [state, setState] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -204,6 +215,19 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
   // Guest form state
   const [guestName, setGuestName] = useState('');
   const [guestEmail, setGuestEmail] = useState('');
+  
+  // Input validation for guest fields
+  function validateGuestInputs(): string | null {
+    if (guestEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail.trim())) {
+      return 'Please enter a valid email address.';
+    }
+    
+    if (guestName.trim() && guestName.length > 50) {
+      return 'Name is too long (max 50 characters).';
+    }
+    
+    return null;
+  }
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [showRipple, setShowRipple] = useState(false);
 
@@ -251,6 +275,13 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
   async function sendRSVP(status: 'join' | 'maybe' | 'decline') {
     if (busy) return;
     
+    // Validate guest inputs if provided
+    const validationError = validateGuestInputs();
+    if (validationError) {
+      alert(validationError);
+      return;
+    }
+    
     setBusy(true);
     try {
       setState(status);
@@ -262,11 +293,19 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
       if (!userEmail) {
         // Check if they provided an email in the form
         if (guestEmail.trim()) {
+          // Sanitize email input
+          const sanitizedEmail = guestEmail.trim().toLowerCase();
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sanitizedEmail)) {
+            alert('Please enter a valid email address.');
+            setState(null);
+            return;
+          }
+          
           // Check if this email already exists in the system
           const { data: existingUser } = await supabase
             .from('profiles')
             .select('id')
-            .eq('email', guestEmail.trim())
+            .eq('email', sanitizedEmail)
             .single();
           
           if (existingUser) {
@@ -277,13 +316,15 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
           }
           
           // Email doesn't exist, allow guest RSVP
+          const sanitizedName = guestName.trim() ? sanitizeInput(guestName.trim()) : null;
+          
           const { data, error } = await supabase
             .from('rsvps')
             .upsert({
               invite_id: inviteId,
               state: status,
-              guest_email: guestEmail.trim(),
-              guest_name: guestName.trim() || null,
+              guest_email: sanitizedEmail,
+              guest_name: sanitizedName,
             }, { onConflict: 'invite_id,guest_email' })
             .select();
           

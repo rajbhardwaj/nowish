@@ -385,6 +385,17 @@ function detectCircle(input: string): Circle {
   };
 }
 
+// Input sanitization function
+function sanitizeInput(input: string): string {
+  return input
+    .replace(/<[^>]*>/g, '') // Remove all HTML tags (including script tags)
+    .replace(/javascript:/gi, '') // Remove javascript: protocols
+    .replace(/on\w+\s*=\s*[^"'\s>]*/gi, '') // Remove event handlers
+    .replace(/[<>]/g, '') // Remove any remaining angle brackets
+    .trim()
+    .substring(0, 200); // Limit length
+}
+
 export default function CreateInvitePage() {
   const [user, setUser] = useState<User | null>(null);
 
@@ -487,6 +498,31 @@ export default function CreateInvitePage() {
     !!hostName &&
     !creating;
 
+  // Input validation function
+  function validateInputs(): string | null {
+    if (!parsed.title || parsed.title.trim().length === 0) {
+      return 'Please enter an activity name.';
+    }
+    
+    if (parsed.title.length > 100) {
+      return 'Activity name is too long (max 100 characters).';
+    }
+    
+    if (hostName && hostName.length > 50) {
+      return 'Host name is too long (max 50 characters).';
+    }
+    
+    if (!parsed.start || !parsed.end) {
+      return 'Please select a time for your invite.';
+    }
+    
+    if (parsed.start && parsed.end && parsed.start >= parsed.end) {
+      return 'End time must be after start time.';
+    }
+    
+    return null;
+  }
+
   async function handleCreate() {
     setErrorMsg(null);
 
@@ -494,8 +530,11 @@ export default function CreateInvitePage() {
       setErrorMsg('You need to be signed in.');
       return;
     }
-    if (!parsed.start || !parsed.end) {
-      setErrorMsg('Please include a time (e.g., “3–5p today”).');
+    
+    // Validate inputs
+    const validationError = validateInputs();
+    if (validationError) {
+      setErrorMsg(validationError);
       return;
     }
 
@@ -506,10 +545,10 @@ export default function CreateInvitePage() {
         .insert([
           {
             creator_id: user.id,
-            title: selectedEmoji ? `${selectedEmoji} ${parsed.title}` : parsed.title,
-            window_start: parsed.start.toISOString(),
-            window_end: parsed.end.toISOString(),
-            host_name: hostName || user.email?.split('@')[0],
+            title: selectedEmoji ? `${selectedEmoji} ${sanitizeInput(parsed.title)}` : sanitizeInput(parsed.title),
+            window_start: parsed.start!.toISOString(),
+            window_end: parsed.end!.toISOString(),
+            host_name: hostName ? sanitizeInput(hostName) : user.email?.split('@')[0],
             circle_ids: [], // Required field - empty array for now
           },
         ])
