@@ -21,6 +21,13 @@ export default function LoginPage() {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
+    
+    // Validate email format
+    if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+      alert('Please enter a valid email address.');
+      return;
+    }
+    
     setBusy(true);
 
     try {
