@@ -411,6 +411,25 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
       return;
     }
     
+    // Check if this email already exists in the system
+    const { data: existingUser, error: existingUserError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', email)
+      .single();
+    
+    console.log('Checking for existing user:', email);
+    console.log('Existing user result:', existingUser);
+    console.log('Existing user error:', existingUserError);
+    
+    if (existingUser) {
+      console.log('User exists, redirecting to login');
+      // Store their RSVP choice and redirect to login
+      const loginUrl = `/login?next=${encodeURIComponent(`/invite/${inviteId}?rsvp=${status}`)}`;
+      window.location.href = loginUrl;
+      return;
+    }
+    
     setBusy(true);
     try {
       setState(status);
