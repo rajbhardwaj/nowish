@@ -202,7 +202,8 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
   const [rsvpNames, setRsvpNames] = useState<{
     join: string[];
     maybe: string[];
-  }>({ join: [], maybe: [] });
+    decline: string[];
+  }>({ join: [], maybe: [], decline: [] });
   
   // Guest form state
   const [guestName, setGuestName] = useState('');
@@ -392,7 +393,7 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
       if (!rsvpError && rsvpData && data) {
         console.log('RSVP data:', rsvpData); // Debug log
         const counts = { join: 0, maybe: 0, decline: 0 };
-        const names = { join: [] as string[], maybe: [] as string[] };
+        const names = { join: [] as string[], maybe: [] as string[], decline: [] as string[] };
         
         // Filter out the host from RSVP counts
         // Since the host is Major and there's a Major in the RSVP list, we need to remove one
@@ -420,13 +421,12 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
             counts.maybe++;
             const displayName = rsvp.guest_name || 'Someone';
             names.maybe.push(displayName);
-          } else if (rsvp.state === 'decline') {
-            counts.decline++;
-            // Also add decline names for potential future display
-            const displayName = rsvp.guest_name || 'Someone';
-            names.decline = names.decline || [];
-            names.decline.push(displayName);
-          }
+            } else if (rsvp.state === 'decline') {
+              counts.decline++;
+              // Also add decline names for potential future display
+              const displayName = rsvp.guest_name || 'Someone';
+              names.decline.push(displayName);
+            }
         });
         
         setRsvpCounts(counts);
