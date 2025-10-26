@@ -227,11 +227,24 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
     setTimeout(() => setShowRipple(false), 600);
   };
 
-  // Check if user is logged in
+  // Check if user is logged in and handle RSVP from login redirect
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setIsLoggedIn(!!user);
+      
+      // Check if they have an RSVP to apply after login
+      const urlParams = new URLSearchParams(window.location.search);
+      const rsvpStatus = urlParams.get('rsvp');
+      
+      if (user && rsvpStatus && ['join', 'maybe', 'decline'].includes(rsvpStatus)) {
+        // Automatically apply their RSVP choice
+        await sendRSVP(rsvpStatus as 'join' | 'maybe' | 'decline');
+        
+        // Clean up the URL
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, '', newUrl);
+      }
     })();
   }, []);
 
@@ -247,9 +260,48 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
       const userEmail = user?.email;
       
       if (!userEmail) {
-        alert('Please log in to RSVP.');
-        setState(null);
-        return;
+        // Check if they provided an email in the form
+        if (guestEmail.trim()) {
+          // Check if this email already exists in the system
+          const { data: existingUser } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('email', guestEmail.trim())
+            .single();
+          
+          if (existingUser) {
+            // Store their RSVP choice and redirect to login
+            const loginUrl = `/login?next=${encodeURIComponent(`/invite/${inviteId}?rsvp=${status}`)}`;
+            window.location.href = loginUrl;
+            return;
+          }
+          
+          // Email doesn't exist, allow guest RSVP
+          const { data, error } = await supabase
+            .from('rsvps')
+            .upsert({
+              invite_id: inviteId,
+              state: status,
+              guest_email: guestEmail.trim(),
+              guest_name: guestName.trim() || null,
+            }, { onConflict: 'invite_id,guest_email' })
+            .select();
+          
+          if (error) {
+            console.error('Failed to save guest RSVP:', error);
+            alert(`Could not save RSVP: ${error.message}`);
+            setState(null);
+          } else {
+            console.log('Guest RSVP saved successfully:', data);
+            setShowSuccess(true);
+            setTimeout(() => setShowSuccess(false), 2000);
+          }
+          return;
+        } else {
+          alert('Please log in to RSVP.');
+          setState(null);
+          return;
+        }
       }
       
       // Get user's display name from their profile

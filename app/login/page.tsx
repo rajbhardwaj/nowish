@@ -1,12 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [nextUrl, setNextUrl] = useState('/create');
+
+  // Get the next URL from query params
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const next = urlParams.get('next');
+    if (next) {
+      setNextUrl(next);
+    }
+  }, []);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -17,7 +27,7 @@ export default function LoginPage() {
       const result = await supabase.auth.signInWithOtp({
         email,
         options: { 
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=/create` 
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextUrl)}` 
         },
       });
 

@@ -684,44 +684,10 @@ export default function CreateInvitePage() {
             <div className="mb-2 text-sm font-medium text-slate-600">Try one, or just type</div>
             <div className="flex flex-wrap gap-2">
               {[
-                { emoji: '☕', text: 'Coffee', suggestion: (() => {
-                  const now = new Date();
-                  const currentHour = now.getHours();
-                  
-                  // Smart time based on current hour
-                  if (currentHour < 10) {
-                    return 'Coffee at 10am today';
-                  } else if (currentHour < 14) {
-                    return 'Coffee at 3pm today';
-                  } else if (currentHour < 16) {
-                    return 'Coffee at 4pm today';
-                  } else {
-                    return 'Coffee at 5pm today';
-                  }
-                })() },
-                { emoji: '🌳', text: 'Park w/ kids', suggestion: (() => {
-                  const now = new Date();
-                  const currentHour = now.getHours();
-                  
-                  // Always suggest 10am, but move to tomorrow if it's already passed
-                  if (currentHour < 10) {
-                    return 'Park with kids at 10am today';
-                  } else {
-                    return 'Park with kids at 10am tomorrow';
-                  }
-                })() },
-                { emoji: '🏈', text: 'Game + drinks', suggestion: 'Game + drinks at 7pm tonight' },
-                { emoji: '🥪', text: 'Lunch near work', suggestion: (() => {
-                  const now = new Date();
-                  const currentHour = now.getHours();
-                  
-                  // Always suggest 12pm, but move to tomorrow if it's already passed
-                  if (currentHour < 12) {
-                    return 'Lunch at 12pm today';
-                  } else {
-                    return 'Lunch at 12pm tomorrow';
-                  }
-                })() },
+                { emoji: '☕', text: 'Coffee', suggestion: 'Coffee' },
+                { emoji: '🌳', text: 'Park w/ kids', suggestion: 'Park with kids' },
+                { emoji: '🏈', text: 'Game + drinks', suggestion: 'Game + drinks' },
+                { emoji: '🥪', text: 'Lunch near work', suggestion: 'Lunch near work' },
               ].map((chip, index) => (
                 <button
                   key={index}
