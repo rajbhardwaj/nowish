@@ -202,9 +202,9 @@ export default function HomePage() {
         )}
       </div>
       
-      <main className="max-w-2xl mx-auto px-6 py-4 text-center pb-[max(24px,env(safe-area-inset-bottom))]">
+      <main className="max-w-2xl mx-auto px-6 py-4 text-center pb-[max(120px,env(safe-area-inset-bottom))]">
       {/* Hero Section */}
-      <div className="mb-8">
+      <div className="mb-4">
         <h1 className="text-5xl sm:text-6xl font-extrabold mb-2 bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent tracking-tight">
           Nowish
         </h1>
@@ -216,11 +216,8 @@ export default function HomePage() {
         <div className="text-sm text-slate-500 mb-1 font-medium tracking-wide">
           About to do something?
         </div>
-        <p className="text-xl text-slate-700 mb-2 font-medium leading-tight" style={{ textWrap: 'balance' }}>
+        <p className="text-xl text-slate-700 mb-3 font-medium leading-tight" style={{ textWrap: 'balance' }}>
           See who&apos;s in.
-        </p>
-        <p className="text-base text-slate-600 mb-6 font-normal">
-          Text it like you would—we make it look good.
         </p>
       </div>
 
@@ -228,9 +225,9 @@ export default function HomePage() {
       <div 
         className={`ripple-effect ${showRipple ? 'ripple-effect' : ''}`}
         style={{ 
-          margin: '0 auto 2rem',
+          margin: '0 auto 1rem',
           maxWidth: '320px',
-          background: `linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)`,
+          background: `linear-gradient(135deg, #fdf2f8 0%, #e0e7ff 50%, #ddd6fe 100%)`,
           borderRadius: '16px',
           padding: '12px',
           boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
@@ -245,39 +242,74 @@ export default function HomePage() {
         onClick={handleCardTouch}
       >
         <div style={{
-          background: 'white',
+          background: 'linear-gradient(135deg, #eff6ff 0%, #e0e7ff 50%, #faf5ff 100%)',
           borderRadius: '12px',
-          padding: '16px',
-          border: '1px solid #e5e7eb',
+          padding: '20px',
+          border: '1px solid rgba(139, 92, 246, 0.2)',
           position: 'relative',
           zIndex: 1
         }}>
-          <div style={{ 
-            fontSize: '16px', 
-            fontWeight: '600', 
-            color: '#1f2937',
-            marginBottom: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px'
-          }}>
-            <span className="bounce-emoji">☕</span>
-            <span>Coffee hang?</span>
-          </div>
+          {/* Host line - muted */}
           <div style={{ 
             fontSize: '14px', 
-            color: '#6b7280',
+            color: '#64748b',
+            marginBottom: '12px'
+          }}>
+            Sarah is heading to…
+          </div>
+          
+          {/* Big title with emoji */}
+          <div style={{ marginBottom: '12px' }}>
+            <div style={{ 
+              fontSize: '32px', 
+              marginBottom: '8px'
+            }}>
+              <span className="bounce-emoji">☕</span>
+            </div>
+            <div style={{ 
+              fontSize: '20px', 
+              fontWeight: '700', 
+              color: '#0f172a',
+              marginBottom: '8px'
+            }}>
+              Coffee
+            </div>
+          </div>
+          
+          {/* Time */}
+          <div style={{ 
+            fontSize: '16px', 
+            color: '#334155',
             marginBottom: '8px'
           }}>
             Today, 3–5 PM
           </div>
+          
+          {/* Friendly invite line */}
           <div style={{ 
             fontSize: '12px', 
-            color: '#6b7280',
-            marginBottom: '4px'
+            color: '#64748b',
+            fontStyle: 'italic',
+            marginBottom: '12px'
           }}>
-            Sarah would love to see you at Coffee hang
+            If you&apos;re free, swing by ✨
+          </div>
+          
+          {/* Attendance strip */}
+          <div style={{
+            borderRadius: '12px',
+            border: '1px solid rgba(59, 130, 246, 0.2)',
+            background: 'rgba(239, 246, 255, 0.5)',
+            padding: '12px 16px',
+            backdropFilter: 'blur(4px)'
+          }}>
+            <div style={{
+              fontSize: '12px',
+              color: '#15803d',
+              fontWeight: '500'
+            }}>
+              Raj, Jenae, & 1 more are in
+            </div>
           </div>
         </div>
         <div style={{ 
@@ -288,14 +320,14 @@ export default function HomePage() {
           position: 'relative',
           zIndex: 1
         }}>
-          Tap to RSVP.
+          Tap to RSVP
         </div>
       </div>
       
       {/* Demo Card Caption */}
       <div style={{ 
         textAlign: 'center',
-        marginTop: '0.5rem',
+        marginTop: '0.25rem',
         fontSize: '0.7rem',
         color: '#9ca3af',
         fontStyle: 'italic'
@@ -307,9 +339,9 @@ export default function HomePage() {
       <div style={{ 
         display: 'grid', 
         gap: '1rem', 
-        marginTop: '2rem',
+        marginTop: '1rem',
         maxWidth: '400px',
-        margin: '2rem auto 0'
+        margin: '1rem auto 0'
       }}>
         <button
           onClick={() => router.push('/create')}
@@ -339,7 +371,7 @@ export default function HomePage() {
           textAlign: 'center',
           fontSize: '0.8rem',
           color: '#9ca3af',
-          marginTop: '8px',
+          marginTop: '4px',
           lineHeight: '1.4'
         }}>
           No app for your friends. One link, tap to RSVP.
