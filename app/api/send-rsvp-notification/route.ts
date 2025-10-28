@@ -1,11 +1,22 @@
 import { Resend } from 'resend';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
+type RsvpState = 'join' | 'maybe' | 'decline';
+
+interface RsvpRow {
+  state: RsvpState;
+  guest_name: string | null;
+  guest_email: string | null;
+}
+
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: Request) {
   try {
-    const { inviteId, rsvpData } = await request.json();
+    const { inviteId, rsvpData } = (await request.json()) as {
+      inviteId: string;
+      rsvpData: RsvpRow[];
+    };
 
     if (!inviteId || !rsvpData) {
       return Response.json({ error: 'Missing required data' }, { status: 400 });
@@ -46,17 +57,17 @@ export async function POST(request: Request) {
       });
     };
 
-    const joinCount = rsvpData.filter((rsvp: any) => rsvp.state === 'join').length;
-    const maybeCount = rsvpData.filter((rsvp: any) => rsvp.state === 'maybe').length;
+    const joinCount = rsvpData.filter((rsvp: RsvpRow) => rsvp.state === 'join').length;
+    const maybeCount = rsvpData.filter((rsvp: RsvpRow) => rsvp.state === 'maybe').length;
     
     const joinNames = rsvpData
-      .filter((rsvp: any) => rsvp.state === 'join')
-      .map((rsvp: any) => rsvp.guest_name || 'Someone')
+      .filter((rsvp: RsvpRow) => rsvp.state === 'join')
+      .map((rsvp: RsvpRow) => rsvp.guest_name || 'Someone')
       .join(', ');
     
     const maybeNames = rsvpData
-      .filter((rsvp: any) => rsvp.state === 'maybe')
-      .map((rsvp: any) => rsvp.guest_name || 'Someone')
+      .filter((rsvp: RsvpRow) => rsvp.state === 'maybe')
+      .map((rsvp: RsvpRow) => rsvp.guest_name || 'Someone')
       .join(', ');
 
     const totalCount = joinCount + maybeCount;
