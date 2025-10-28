@@ -127,14 +127,6 @@ export async function POST(request: Request) {
               </p>
             </div>
             
-            ${invite.location ? `
-            <div style="margin-bottom: 16px;">
-              <p style="color: #64748b; font-size: 14px; margin: 0 0 4px 0; font-weight: 500;">WHERE</p>
-              <p style="color: #1e293b; font-size: 16px; margin: 0; font-weight: 600;">
-                ${invite.location}
-              </p>
-            </div>
-            ` : ''}
             
             <div style="background: #f8fafc; border-radius: 8px; padding: 16px; margin-top: 20px;">
               <p style="color: #1e293b; font-size: 16px; margin: 0; font-weight: 600;">
