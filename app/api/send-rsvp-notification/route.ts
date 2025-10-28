@@ -13,9 +13,10 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: Request) {
   try {
-    const { inviteId, rsvpData } = (await request.json()) as {
+    const { inviteId, rsvpData, triggeringRsvp } = (await request.json()) as {
       inviteId: string;
       rsvpData: RsvpRow[];
+      triggeringRsvp?: RsvpRow;
     };
 
     if (!inviteId || !rsvpData) {
@@ -129,9 +130,8 @@ export async function POST(request: Request) {
 
     const totalCount = joinCount + maybeCount;
     
-    // Get the most recent RSVP name for the subject/title
-    const mostRecentRsvp = rsvpData[rsvpData.length - 1];
-    const recentName = mostRecentRsvp?.guest_name || 'Someone';
+    // Get the name that just RSVPed (the one that triggered this email)
+    const recentName = triggeringRsvp?.guest_name || 'Someone';
     
     // Format names list like the app does
     const formatNamesList = (names: string[]) => {
@@ -176,7 +176,7 @@ export async function POST(request: Request) {
             <div style="text-align: center; margin-bottom: 20px;">
               <div style="font-size: 32px; margin-bottom: 8px;">☕</div>
               <h2 style="color: #1e293b; font-size: 24px; margin: 0; font-weight: 700;">
-                ${invite.title}
+                ${invite.title.replace(/^[^\w\s]*\s*/, '')}
               </h2>
             </div>
             

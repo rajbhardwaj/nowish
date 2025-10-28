@@ -236,7 +236,7 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
   };
 
   // Helper function to send RSVP notification email
-  const sendRSVPNotification = async () => {
+  const sendRSVPNotification = async (triggeringRsvp: { state: string; guest_name: string | null; guest_email: string | null }) => {
     try {
       console.log('Sending RSVP notification for invite:', inviteId);
       
@@ -255,7 +255,8 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             inviteId,
-            rsvpData
+            rsvpData,
+            triggeringRsvp
           })
         });
         
@@ -390,7 +391,11 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
               // Refresh the invite data to show updated RSVPs
               fetchInvite();
               // Send notification email to creator
-              sendRSVPNotification();
+              sendRSVPNotification({
+                state: status,
+                guest_name: displayName,
+                guest_email: userEmail
+              });
             }
     } catch (err) {
       console.error('RSVP error:', err);
@@ -450,7 +455,11 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
           // Refresh the invite data to show updated RSVPs
           fetchInvite();
           // Send notification email to creator
-          sendRSVPNotification();
+          sendRSVPNotification({
+            state: status,
+            guest_name: name || null,
+            guest_email: email
+          });
         }
     } catch (err) {
       console.error('Guest RSVP error:', err);
