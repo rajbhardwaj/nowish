@@ -101,7 +101,7 @@ export async function POST(request: Request) {
 
     // Send email
     const { data, error } = await resend.emails.send({
-      from: 'Nowish <notifications@nowish.app>',
+      from: 'Nowish <notifications@mail.nowish.rsvp>',
       to: [creator.email],
       subject: `${emoji} Someone's in!`,
       html: `
