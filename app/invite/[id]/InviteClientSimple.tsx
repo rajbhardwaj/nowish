@@ -275,7 +275,7 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
     if (state === 'join' || state === 'maybe') {
       // Give the UI a tick to render, then scroll
       setTimeout(() => {
-        calendarButtonsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        calendarButtonsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }, 150);
     }
   }, [state]);
@@ -551,7 +551,7 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: styles }} />
-      <main className="mx-auto w-full max-w-2xl px-4 py-8">
+      <main className="mx-auto w-full max-w-2xl px-4 py-4 sm:py-8">
       <div className="space-y-6">
         {/* Invite Card */}
         <div 
