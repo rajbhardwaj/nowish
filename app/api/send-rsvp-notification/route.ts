@@ -23,13 +23,17 @@ export async function POST(request: Request) {
     }
 
     // Get invite details
+    console.log('Looking for invite with ID:', inviteId);
     const { data: invite, error: inviteError } = await supabaseAdmin
       .from('open_invites')
       .select('title, host_name, start_time, end_time, location, creator_id')
       .eq('id', inviteId)
       .single();
 
+    console.log('Invite query result:', { invite, inviteError });
+
     if (inviteError || !invite) {
+      console.error('Invite not found:', inviteError);
       return Response.json({ error: 'Invite not found' }, { status: 404 });
     }
 
