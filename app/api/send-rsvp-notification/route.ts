@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     console.log('Looking for invite with ID:', inviteId);
     const { data: invite, error: inviteError } = await supabaseAdmin
       .from('open_invites')
-      .select('title, host_name, start_time, end_time, location, creator_id')
+      .select('title, host_name, window_start, window_end, location, creator_id')
       .eq('id', inviteId)
       .single();
 
@@ -114,7 +114,7 @@ export async function POST(request: Request) {
             <div style="margin-bottom: 16px;">
               <p style="color: #64748b; font-size: 14px; margin: 0 0 4px 0; font-weight: 500;">WHEN</p>
               <p style="color: #1e293b; font-size: 16px; margin: 0; font-weight: 600;">
-                ${formatTime(invite.start_time)} - ${formatTime(invite.end_time)}
+                ${formatTime(invite.window_start)} - ${formatTime(invite.window_end)}
               </p>
             </div>
             
