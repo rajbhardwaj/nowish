@@ -129,6 +129,10 @@ export async function POST(request: Request) {
 
     const totalCount = joinCount + maybeCount;
     
+    // Get the most recent RSVP name for the subject/title
+    const mostRecentRsvp = rsvpData[rsvpData.length - 1];
+    const recentName = mostRecentRsvp?.guest_name || 'Someone';
+    
     // Format names list like the app does
     const formatNamesList = (names: string[]) => {
       if (names.length === 0) return '';
@@ -151,14 +155,14 @@ export async function POST(request: Request) {
     const { data, error } = await resend.emails.send({
       from: 'Nowish <notifications@mail.nowish.rsvp>',
       to: [creator.email],
-      subject: `🎉🥳 Someone's in!`,
+      subject: `🎉 ${recentName}'s in!`,
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);">
           
           <!-- Celebration Card -->
           <div style="background: linear-gradient(135deg, #fdf2f8 0%, #ffffff 50%, #e0e7ff 100%); padding: 30px; border-radius: 16px; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
             <h1 style="color: #1e293b; font-size: 28px; margin: 0 0 10px 0; font-weight: 700;">
-              🎉🥳 Someone's in!
+              🎉 ${recentName}'s in!
             </h1>
             <p style="color: #64748b; font-size: 16px; margin: 0;">
               Your invite is getting responses
@@ -177,7 +181,7 @@ export async function POST(request: Request) {
             </div>
             
             <!-- Time -->
-            <div style="margin-bottom: 20px;">
+            <div style="text-align: center; margin-bottom: 20px;">
               <p style="color: #64748b; font-size: 14px; margin: 0 0 4px 0; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">WHEN</p>
               <p style="color: #1e293b; font-size: 18px; margin: 0; font-weight: 600;">
                 ${formatTimeNicely(invite.window_start, invite.window_end)}
@@ -185,7 +189,7 @@ export async function POST(request: Request) {
             </div>
             
             <!-- Attendance -->
-            <div style="background: #f8fafc; border-radius: 12px; padding: 16px; border: 1px solid #e2e8f0;">
+            <div style="background: #f8fafc; border-radius: 12px; padding: 16px; border: 1px solid #e2e8f0; text-align: center;">
               <p style="color: #1e293b; font-size: 16px; margin: 0 0 8px 0; font-weight: 600;">
                 ${attendanceText}
               </p>
