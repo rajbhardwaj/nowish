@@ -213,6 +213,7 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
   // Input validation for guest fields
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [showRipple, setShowRipple] = useState(false);
+  const socialProofRef = useRef<HTMLDivElement | null>(null);
 
   const handleCardTouch = () => {
     // Trigger ripple effect
@@ -270,12 +271,13 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
     })();
   }, []);
 
-  // When a user RSVPs yes/maybe, scroll calendar buttons into view (mobile friendly)
+  // When a user RSVPs yes/maybe, scroll to keep social proof visible while showing calendar
   useEffect(() => {
     if (state === 'join' || state === 'maybe') {
       // Give the UI a tick to render, then scroll
       setTimeout(() => {
-        calendarButtonsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        // Scroll to social proof section to keep it visible, calendar will be below
+        socialProofRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 150);
     }
   }, [state]);
@@ -551,7 +553,7 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: styles }} />
-      <main className="mx-auto w-full max-w-2xl px-4 py-4 sm:py-8">
+      <main className="mx-auto w-full max-w-2xl px-4 py-2 sm:py-8">
       <div className="space-y-6">
         {/* Invite Card */}
         <div 
@@ -591,32 +593,34 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
             </div>
             
             {/* Attendance strip */}
-            {rsvpCounts.join < 1 ? (
-              <div className="flex justify-center">
-                <div className="inline-block rounded-lg border border-slate-200 bg-slate-50 px-2 py-1">
-                  <div className="text-sm text-slate-600">
-                    Open invite — be the first to join!
+            <div ref={socialProofRef}>
+              {rsvpCounts.join < 1 ? (
+                <div className="flex justify-center">
+                  <div className="inline-block rounded-lg border border-slate-200 bg-slate-50 px-2 py-1">
+                    <div className="text-sm text-slate-600">
+                      Open invite — be the first to join!
+                    </div>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <div className="rounded-xl border border-blue-200/50 bg-blue-50/50 px-4 py-3 backdrop-blur-sm">
-                <div className="text-sm text-green-700 font-medium">
-                  {rsvpCounts.join === 1 ? (
-                    `${invite.host_name} & ${rsvpNames.join[0]} are in`
-                  ) : rsvpCounts.join === 2 ? (
-                    `${invite.host_name}, ${rsvpNames.join[0]}, & ${rsvpNames.join[1]} are in`
-                  ) : (
-                    `${invite.host_name}, ${rsvpNames.join[0]}, & ${rsvpCounts.join - 1} others are in`
+              ) : (
+                <div className="rounded-xl border border-blue-200/50 bg-blue-50/50 px-4 py-3 backdrop-blur-sm">
+                  <div className="text-sm text-green-700 font-medium">
+                    {rsvpCounts.join === 1 ? (
+                      `${invite.host_name} & ${rsvpNames.join[0]} are in`
+                    ) : rsvpCounts.join === 2 ? (
+                      `${invite.host_name}, ${rsvpNames.join[0]}, & ${rsvpNames.join[1]} are in`
+                    ) : (
+                      `${invite.host_name}, ${rsvpNames.join[0]}, & ${rsvpCounts.join - 1} others are in`
+                    )}
+                  </div>
+                  {rsvpCounts.maybe > 0 && (
+                    <div className="text-sm text-amber-700 mt-1">
+                      {formatNamesList(rsvpNames.maybe)} maybe
+                    </div>
                   )}
                 </div>
-                {rsvpCounts.maybe > 0 && (
-                  <div className="text-sm text-amber-700 mt-1">
-                    {formatNamesList(rsvpNames.maybe)} maybe
-                  </div>
-                )}
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
 
