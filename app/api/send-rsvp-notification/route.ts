@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     
     const { data: invite, error: inviteError } = await supabaseAdmin
       .from('open_invites')
-      .select('title, host_name, window_start, window_end, creator_id')
+      .select('title, host_name, window_start, window_end, creator_id, timezone')
       .eq('id', inviteId)
       .single();
 
@@ -77,7 +77,8 @@ export async function POST(request: Request) {
       const timeOptions: Intl.DateTimeFormatOptions = {
         hour: 'numeric',
         minute: '2-digit',
-        hour12: true
+        hour12: true,
+        timeZone: invite.timezone || 'UTC'
       };
       
       const startTime = start.toLocaleTimeString(undefined, timeOptions);
@@ -111,7 +112,8 @@ export async function POST(request: Request) {
           weekday: 'short',
           hour: 'numeric',
           minute: '2-digit',
-          hour12: true
+          hour12: true,
+          timeZone: invite.timezone || 'UTC'
         };
         const startFormatted = start.toLocaleString(undefined, dayOptions);
         const endFormatted = end.toLocaleTimeString(undefined, timeOptions);
