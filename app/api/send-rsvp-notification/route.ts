@@ -117,14 +117,21 @@ export async function POST(request: Request) {
       }
     };
 
-    const joinCount = rsvpData.filter((rsvp: RsvpRow) => rsvp.state === 'join').length;
-    const maybeCount = rsvpData.filter((rsvp: RsvpRow) => rsvp.state === 'maybe').length;
+    // Filter out the host from the attendance list for the email (host doesn't need to see themselves)
+    const hostName = invite.host_name;
+    const guestRsvps = rsvpData.filter((rsvp: RsvpRow) => {
+      // Remove the first RSVP with the host's name (assuming it's the host's auto-RSVP)
+      return !(rsvp.guest_name === hostName && rsvpData.indexOf(rsvp) === rsvpData.findIndex(r => r.guest_name === hostName));
+    });
+
+    const joinCount = guestRsvps.filter((rsvp: RsvpRow) => rsvp.state === 'join').length;
+    const maybeCount = guestRsvps.filter((rsvp: RsvpRow) => rsvp.state === 'maybe').length;
     
-    const joinNames = rsvpData
+    const joinNames = guestRsvps
       .filter((rsvp: RsvpRow) => rsvp.state === 'join')
       .map((rsvp: RsvpRow) => rsvp.guest_name || 'Someone');
     
-    const maybeNames = rsvpData
+    const maybeNames = guestRsvps
       .filter((rsvp: RsvpRow) => rsvp.state === 'maybe')
       .map((rsvp: RsvpRow) => rsvp.guest_name || 'Someone');
 
