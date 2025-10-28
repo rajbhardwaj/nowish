@@ -238,15 +238,19 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
   // Helper function to send RSVP notification email
   const sendRSVPNotification = async () => {
     try {
+      console.log('Sending RSVP notification for invite:', inviteId);
+      
       // Get all current RSVPs for this invite
       const { data: rsvpData } = await supabase
         .from('rsvps')
         .select('state, guest_name, guest_email')
         .eq('invite_id', inviteId);
 
+      console.log('RSVP data for email:', rsvpData);
+
       if (rsvpData && rsvpData.length > 0) {
         // Send notification email to creator
-        await fetch('/api/send-rsvp-notification', {
+        const response = await fetch('/api/send-rsvp-notification', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -254,6 +258,15 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
             rsvpData
           })
         });
+        
+        const result = await response.json();
+        console.log('Email API response:', result);
+        
+        if (!response.ok) {
+          console.error('Email API error:', result);
+        }
+      } else {
+        console.log('No RSVP data found, skipping email');
       }
     } catch (error) {
       console.error('Failed to send RSVP notification:', error);
