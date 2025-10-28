@@ -62,7 +62,7 @@ export async function POST(request: Request) {
       return Response.json({ error: 'Creator email not found' }, { status: 404 });
     }
 
-    // Format time like the app does
+    // Format time like the app does - use the same timezone as the invite
     const formatTimeNicely = (startISO: string, endISO: string): string => {
       const start = new Date(startISO);
       const end = new Date(endISO);
@@ -72,6 +72,8 @@ export async function POST(request: Request) {
       const isToday = start.toDateString() === now.toDateString();
       const isTomorrow = start.toDateString() === new Date(now.getTime() + 24 * 60 * 60 * 1000).toDateString();
       
+      // Use the same timezone as the invite (likely the user's local timezone)
+      // Default to UTC if no timezone is available
       const timeOptions: Intl.DateTimeFormatOptions = {
         hour: 'numeric',
         minute: '2-digit',
