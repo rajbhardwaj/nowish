@@ -24,9 +24,18 @@ export async function POST(request: Request) {
 
     // Get invite details
     console.log('Looking for invite with ID:', inviteId);
+    
+    // First, let's see what's actually in the open_invites table
+    const { data: allInvites, error: allInvitesError } = await supabaseAdmin
+      .from('open_invites')
+      .select('id, title, creator_id')
+      .limit(5);
+    
+    console.log('Sample invites in database:', { allInvites, allInvitesError });
+    
     const { data: invite, error: inviteError } = await supabaseAdmin
       .from('open_invites')
-      .select('title, host_name, window_start, window_end, location, creator_id')
+      .select('title, host_name, window_start, window_end, creator_id')
       .eq('id', inviteId)
       .single();
 
