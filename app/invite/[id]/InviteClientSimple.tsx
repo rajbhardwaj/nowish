@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 
 // Add styles for animations
@@ -186,6 +186,7 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
   const [state, setState] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const calendarButtonsRef = useRef<HTMLDivElement | null>(null);
   const [invite, setInvite] = useState<{
     id: string;
     title: string;
@@ -233,6 +234,32 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
     setTimeout(() => setShowRipple(false), 600);
   };
 
+  // Helper function to send RSVP notification email
+  const sendRSVPNotification = async () => {
+    try {
+      // Get all current RSVPs for this invite
+      const { data: rsvpData } = await supabase
+        .from('rsvps')
+        .select('state, guest_name, guest_email')
+        .eq('invite_id', inviteId);
+
+      if (rsvpData && rsvpData.length > 0) {
+        // Send notification email to creator
+        await fetch('/api/send-rsvp-notification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            inviteId,
+            rsvpData
+          })
+        });
+      }
+    } catch (error) {
+      console.error('Failed to send RSVP notification:', error);
+      // Don't show error to user - this is a background notification
+    }
+  };
+
   // Check if user is logged in and handle RSVP from login redirect
   useEffect(() => {
     (async () => {
@@ -242,6 +269,56 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
       // No automatic RSVP application needed - all RSVPs are guest RSVPs
     })();
   }, []);
+
+  // When a user RSVPs yes/maybe, scroll calendar buttons into view (mobile friendly)
+  useEffect(() => {
+    if (state === 'join' || state === 'maybe') {
+      // Give the UI a tick to render, then scroll
+      setTimeout(() => {
+        calendarButtonsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 150);
+    }
+  }, [state]);
+
+  function formatToICSDateString(date: Date): string {
+    // YYYYMMDDTHHMMSSZ
+    const iso = date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    return iso;
+  }
+
+  function downloadICS(inviteData: { title: string; host_name: string | null; window_start: string; window_end: string }) {
+    const start = new Date(inviteData.window_start);
+    const end = new Date(inviteData.window_end);
+    const summary = `${inviteData.title}${inviteData.host_name ? ` - ${inviteData.host_name}` : ''}`;
+    const description = `Join ${inviteData.host_name ?? 'the host'} for ${inviteData.title}`;
+
+    const ics = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Nowish//EN',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+      'BEGIN:VEVENT',
+      `UID:${inviteId}@nowish`,
+      `DTSTAMP:${formatToICSDateString(new Date())}`,
+      `DTSTART:${formatToICSDateString(start)}`,
+      `DTEND:${formatToICSDateString(end)}`,
+      `SUMMARY:${summary.replace(/\n/g, ' ')}`,
+      `DESCRIPTION:${description.replace(/\n/g, ' ')}`,
+      'END:VEVENT',
+      'END:VCALENDAR'
+    ].join('\r\n');
+
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'nowish-event.ics';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
 
   async function sendRSVP(status: 'join' | 'maybe' | 'decline') {
     if (busy) return;
@@ -297,6 +374,8 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
               setTimeout(() => setShowSuccess(false), 2000);
               // Refresh the invite data to show updated RSVPs
               fetchInvite();
+              // Send notification email to creator
+              sendRSVPNotification();
             }
     } catch (err) {
       console.error('RSVP error:', err);
@@ -355,6 +434,8 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
           setTimeout(() => setShowSuccess(false), 2000);
           // Refresh the invite data to show updated RSVPs
           fetchInvite();
+          // Send notification email to creator
+          sendRSVPNotification();
         }
     } catch (err) {
       console.error('Guest RSVP error:', err);
@@ -631,6 +712,29 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
             </p>
           </div>
         )}
+
+        {/* Add to Calendar - show for join/maybe */}
+        {(state === 'join' || state === 'maybe') && invite && (
+          <div ref={calendarButtonsRef} className="mt-4">
+            <button
+              onClick={() => downloadICS(invite)}
+              className="w-full rounded-xl border-2 border-dashed border-blue-300 bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 font-semibold text-blue-700 shadow-lg transition-all duration-200 hover:from-blue-100 hover:to-indigo-100 hover:border-blue-400 active:scale-95"
+            >
+              📅 Add to Calendar
+            </button>
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className="mt-8 border-t border-slate-200 pt-6 text-center">
+          <p className="text-sm text-slate-600 mb-3">Start your own in 10 seconds</p>
+          <a
+            href="/create"
+            className="inline-flex items-center rounded-lg border border-blue-200 bg-gradient-to-r from-blue-100 to-indigo-100 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm transition-all duration-200 hover:from-blue-200 hover:to-indigo-200 active:scale-95"
+          >
+            Create an invite
+          </a>
+        </div>
       </div>
     </main>
     </>
