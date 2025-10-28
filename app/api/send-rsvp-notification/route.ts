@@ -33,14 +33,18 @@ export async function POST(request: Request) {
       return Response.json({ error: 'Invite not found' }, { status: 404 });
     }
 
-    // Get creator's email
-    const { data: creator, error: creatorError } = await supabaseAdmin
-      .from('profiles')
-      .select('email')
-      .eq('id', invite.creator_id)
-      .single();
+    // Get creator's email from auth.users
+    const { data: users, error: usersError } = await supabaseAdmin.auth.admin.listUsers({
+      page: 1,
+      perPage: 1000
+    });
 
-    if (creatorError || !creator?.email) {
+    if (usersError || !users?.users) {
+      return Response.json({ error: 'Failed to fetch users' }, { status: 500 });
+    }
+
+    const creator = users.users.find(user => user.id === invite.creator_id);
+    if (!creator?.email) {
       return Response.json({ error: 'Creator email not found' }, { status: 404 });
     }
 
