@@ -205,10 +205,13 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
     maybe: string[];
     decline: string[];
   }>({ join: [], maybe: [], decline: [] });
+  const [isExpired, setIsExpired] = useState(false);
   
   // Guest form state
   const [guestName, setGuestName] = useState('');
   const [guestEmail, setGuestEmail] = useState('');
+  const [pendingStatus, setPendingStatus] = useState<null | 'join' | 'maybe' | 'decline'>(null);
+  const [showCapture, setShowCapture] = useState(false);
   
   // Input validation for guest fields
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
@@ -295,6 +298,7 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
       }, 150);
     }
   }, [state]);
+
 
   function formatToICSDateString(date: Date): string {
     // YYYYMMDDTHHMMSSZ
@@ -470,6 +474,12 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
     }
   }
 
+  // When a guest taps an RSVP, show capture UI then submit
+  const handleGuestTap = (status: 'join' | 'maybe' | 'decline') => {
+    setPendingStatus(status);
+    setShowCapture(true);
+  };
+
   const fetchInvite = useCallback(async () => {
     try {
       // Fetch invite details
@@ -550,6 +560,16 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
     fetchInvite();
   }, [inviteId, fetchInvite]);
 
+  // Auto-expire: mark expired at start + 30 minutes
+  useEffect(() => {
+    if (!invite?.window_start) return;
+    const expiryMs = new Date(invite.window_start).getTime() + 30 * 60 * 1000;
+    const compute = () => setIsExpired(Date.now() > expiryMs);
+    compute();
+    const id = setInterval(compute, 30_000);
+    return () => clearInterval(id);
+  }, [invite?.window_start]);
+
   if (loading) {
     return (
       <main className="mx-auto w-full max-w-2xl px-4 py-8">
@@ -579,12 +599,14 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
       <div className="space-y-6">
         {/* Invite Card */}
         <div 
-          className={`ripple-effect ${showRipple ? 'ripple-effect' : ''} relative overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-6 shadow-lg backdrop-blur-sm cursor-pointer`}
+          className={`ripple-effect ${showRipple ? 'ripple-effect' : ''} relative overflow-hidden rounded-2xl border ${isExpired ? 'border-slate-200/70' : 'border-slate-200'} ${isExpired ? 'bg-slate-50' : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50'} p-6 shadow-lg backdrop-blur-sm ${isExpired ? 'cursor-default opacity-60' : 'cursor-pointer'}`}
           onTouchStart={handleCardTouch}
           onClick={handleCardTouch}
         >
           {/* Subtle decorative pattern */}
           <div className="absolute inset-0 bg-gradient-to-br from-blue-100/10 via-transparent to-purple-100/10"></div>
+
+          {/* Removed card-wide overlay; we render ended badge in the time section below */}
           
           <div className="relative space-y-4 text-center">
             {/* Host line - muted */}
@@ -593,7 +615,7 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
                 {invite.host_name} is heading to…
               </div>
             )}
-            
+
             {/* Big title with emoji */}
             <div className="space-y-3">
               <div className="bounce-emoji text-5xl">
@@ -604,15 +626,28 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
               </h1>
             </div>
             
-            {/* Time and location */}
-            <div className="text-lg text-slate-700">
-              {formatTimeNicely(invite.window_start, invite.window_end)}
+            {/* Time or ended badge */}
+            <div className="space-y-2">
+              {isExpired ? (
+                <div className="flex justify-center">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white/80 px-6 py-3 text-lg font-bold text-slate-700 shadow-xl">
+                    <span>⏳</span>
+                    <span>This invite has ended</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-lg text-slate-700">
+                  {formatTimeNicely(invite.window_start, invite.window_end)}
+                </div>
+              )}
             </div>
-            
+
             {/* Friendly invite line */}
-            <div className="text-sm italic text-slate-500">
-              If you&apos;re free, swing by ✨
-            </div>
+            {!isExpired && (
+              <div className="text-sm italic text-slate-500">
+                If you&apos;re free, swing by ✨
+              </div>
+            )}
             
             {/* Attendance strip */}
             <div ref={socialProofRef}>
@@ -646,42 +681,14 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
           </div>
         </div>
 
-        {/* Guest form - show by default, hide only if confirmed logged in */}
-        {isLoggedIn !== true && (
-          <div className="rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-lg backdrop-blur-sm">
-            <div className="space-y-4">
-              <div className="text-center">
-                <h2 className="text-lg font-semibold text-slate-900">Let the host know who you are</h2>
-                <p className="text-sm text-slate-600">This helps them recognize you</p>
-              </div>
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  placeholder="Your name (optional)"
-                  value={guestName}
-                  onChange={(e) => setGuestName(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
-                />
-                <input
-                  type="email"
-                  placeholder="Your email (helps for future invites)"
-                  value={guestEmail}
-                  onChange={(e) => setGuestEmail(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
-                />
-              </div>
-            </div>
-          </div>
-        )}
         {/* RSVP Buttons */}
+        {!isExpired && (
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
           <button
-            onClick={() => isLoggedIn === true ? sendRSVP('join') : sendGuestRSVP('join')}
-            disabled={busy || (isLoggedIn !== true && !guestEmail.trim())}
+            onClick={() => isLoggedIn === true ? sendRSVP('join') : handleGuestTap('join')}
+            disabled={busy}
             className={`relative rounded-xl px-6 py-3 font-semibold text-white shadow-lg transition-all duration-200 disabled:cursor-not-allowed ${
-              busy || (isLoggedIn !== true && !guestEmail.trim())
-                ? 'bg-slate-300'
-                : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 hover:shadow-xl active:scale-95'
+              busy ? 'bg-slate-300' : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 hover:shadow-xl active:scale-95'
             }`}
           >
             {state === 'join' && (
@@ -691,8 +698,8 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
           </button>
           
           <button
-            onClick={() => isLoggedIn === true ? sendRSVP('maybe') : sendGuestRSVP('maybe')}
-            disabled={busy || (isLoggedIn !== true && !guestEmail.trim())}
+            onClick={() => isLoggedIn === true ? sendRSVP('maybe') : handleGuestTap('maybe')}
+            disabled={busy}
             className={`relative rounded-xl border border-slate-300 bg-white px-6 py-3 font-semibold text-slate-700 shadow-lg transition-all duration-200 hover:bg-slate-50 active:scale-95 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 ${
               state === 'maybe' ? 'ring-2 ring-amber-500' : ''
             }`}
@@ -704,8 +711,8 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
           </button>
           
           <button
-            onClick={() => isLoggedIn === true ? sendRSVP('decline') : sendGuestRSVP('decline')}
-            disabled={busy || (isLoggedIn !== true && !guestEmail.trim())}
+            onClick={() => isLoggedIn === true ? sendRSVP('decline') : handleGuestTap('decline')}
+            disabled={busy}
             className={`relative rounded-xl border border-slate-300 bg-white px-6 py-3 font-semibold text-slate-700 shadow-lg transition-all duration-200 hover:bg-slate-50 active:scale-95 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 ${
               state === 'decline' ? 'ring-2 ring-red-500' : ''
             }`}
@@ -716,6 +723,49 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
             Can&apos;t make it
           </button>
         </div>
+        )}
+
+        {/* Progressive capture UI for guests (shown after tap) */}
+        {isLoggedIn !== true && showCapture && (
+          <div className="rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-lg backdrop-blur-sm">
+            <div className="space-y-4">
+              <div className="text-center">
+                <h2 className="text-lg font-semibold text-slate-900">Let the host know who you are</h2>
+                <p className="text-sm text-slate-600">Add your name/email to confirm your RSVP</p>
+              </div>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="Your name (optional)"
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                />
+                <input
+                  type="email"
+                  placeholder="Your email (required)"
+                  value={guestEmail}
+                  onChange={(e) => setGuestEmail(e.target.value)}
+                  className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none"
+                />
+              </div>
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  onClick={() => { setShowCapture(false); setPendingStatus(null); }}
+                  className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-slate-700 hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => { if (pendingStatus) { sendGuestRSVP(pendingStatus); setShowCapture(false); } }}
+                  className="rounded-xl bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700"
+                >
+                  Confirm RSVP
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Success Animation */}
         {showSuccess && (
@@ -738,6 +788,8 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
             </p>
           </div>
         )}
+
+        {/* Post-RSVP handoff removed per request (keep footer CTA only) */}
 
         {/* Add to Calendar - show for join/maybe */}
         {(state === 'join' || state === 'maybe') && invite && (

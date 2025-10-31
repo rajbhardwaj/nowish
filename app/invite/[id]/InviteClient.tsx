@@ -10,6 +10,8 @@ export default function InviteClient({ inviteId }: { inviteId: string }) {
   const [authedEmail, setAuthedEmail] = useState<string | null>(null);
   const [guestName, setGuestName] = useState('');
   const [guestEmail, setGuestEmail] = useState('');
+  const [pendingStatus, setPendingStatus] = useState<null | 'join' | 'maybe' | 'decline'>(null);
+  const [showCapture, setShowCapture] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -18,6 +20,7 @@ export default function InviteClient({ inviteId }: { inviteId: string }) {
       setAuthedEmail(email);
     })();
   }, []);
+
 
   async function upsertRsvp(payload: {
     invite_id: string;
@@ -34,41 +37,10 @@ export default function InviteClient({ inviteId }: { inviteId: string }) {
   async function sendRSVP(status: 'join' | 'maybe' | 'decline') {
     if (busy) return;
 
-    // === If not signed in, require email ===
+    // If not signed in, show progressive capture instead of blocking upfront
     if (!authedEmail) {
-      const email = guestEmail.trim();
-      const name = guestName.trim();
-
-      if (!email) {
-        alert('Please enter your email so the host knows who you are.');
-        return;
-      }
-      if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
-        alert('Please enter a valid email.');
-        return;
-      }
-
-      setBusy(true);
-      try {
-        setState(status);
-        const { error } = await upsertRsvp({
-          invite_id: inviteId,
-          state: status,
-          guest_email: email,
-          guest_name: name || null,
-        });
-        if (error) {
-          console.error(error);
-          alert(`Could not record RSVP: ${error.message}`);
-          setState(null);
-        }
-      } catch (err) {
-        console.error(err);
-        alert(`Unexpected error: ${(err as Error).message}`);
-        setState(null);
-      } finally {
-        setBusy(false);
-      }
+      setPendingStatus(status);
+      setShowCapture(true);
       return;
     }
 
@@ -96,10 +68,50 @@ export default function InviteClient({ inviteId }: { inviteId: string }) {
     }
   }
 
+  async function confirmGuestRSVP() {
+    if (busy || !pendingStatus) return;
+    const email = guestEmail.trim();
+    const name = guestName.trim();
+    if (!email) {
+      alert('Please enter your email so the host knows who you are.');
+      return;
+    }
+    if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+      alert('Please enter a valid email.');
+      return;
+    }
+
+    setBusy(true);
+    try {
+      setState(pendingStatus);
+      const { error } = await upsertRsvp({
+        invite_id: inviteId,
+        state: pendingStatus,
+        guest_email: email,
+        guest_name: name || null,
+      });
+      if (error) {
+        console.error(error);
+        alert(`Could not record RSVP: ${error.message}`);
+        setState(null);
+      } else {
+        setShowCapture(false);
+        setPendingStatus(null);
+      }
+    } catch (err) {
+      console.error(err);
+      alert(`Unexpected error: ${(err as Error).message}`);
+      setState(null);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div style={{ marginTop: 24, textAlign: 'center' }}>
-      {/* Guest identity form */}
-      {!authedEmail && (
+      {/* Basic client does not know timing; if wired later, disable buttons similarly when expired */}
+      {/* Progressive capture UI shown after RSVP tap for guests */}
+      {(!authedEmail && showCapture) && (
         <section
           style={{
             marginBottom: 20,
@@ -111,7 +123,7 @@ export default function InviteClient({ inviteId }: { inviteId: string }) {
             marginInline: 'auto',
           }}
         >
-          <p style={{ margin: '0 0 8px' }}>Let the host know who you are:</p>
+          <p style={{ margin: '0 0 8px' }}>Add your details to confirm your RSVP:</p>
           <div style={{ display: 'grid', gap: 8 }}>
             <input
               type="text"
@@ -127,6 +139,20 @@ export default function InviteClient({ inviteId }: { inviteId: string }) {
               onChange={(e) => setGuestEmail(e.target.value)}
               style={{ padding: '10px 12px', borderRadius: 8, border: '1px solid #ddd' }}
             />
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 12, justifyContent: 'flex-end' }}>
+            <button
+              onClick={() => { setShowCapture(false); setPendingStatus(null); }}
+              style={{ background: 'transparent', border: '1px solid #ccc', padding: '8px 14px', borderRadius: 8 }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmGuestRSVP}
+              style={{ background: '#111', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: 8, fontWeight: 600 }}
+            >
+              Confirm RSVP
+            </button>
           </div>
         </section>
       )}
@@ -166,6 +192,8 @@ export default function InviteClient({ inviteId }: { inviteId: string }) {
             : 'No worries, thanks for replying!'}
         </p>
       )}
+
+      {/* Post-RSVP handoff removed per request (keep footer CTA only) */}
     </div>
   );
 }
