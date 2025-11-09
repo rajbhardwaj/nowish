@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { getAllowedAnalyticsEmails, isEmailAllowedForAnalytics } from '@/lib/analyticsAuth';
 
 type LandingRow = {
   day: string;
@@ -48,17 +49,6 @@ export const dynamic = 'force-dynamic';
 
 const DAYS_TO_PULL = 14;
 const HERO_WINDOW_DAYS = 7;
-const DEFAULT_ALLOWED_EMAIL = 'rajat82@gmail.com';
-
-function getAllowedEmails() {
-  const fromEnv = process.env.NOWISH_ANALYTICS_ALLOWED_EMAILS;
-  const raw = fromEnv && fromEnv.trim().length > 0 ? fromEnv : DEFAULT_ALLOWED_EMAIL;
-  return raw
-    .split(',')
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
-}
-
 function formatNumber(value: number | null | undefined) {
   if (value === null || value === undefined || Number.isNaN(value)) return '—';
   return value.toLocaleString('en-US');
@@ -169,18 +159,16 @@ async function getAnalyticsData() {
 }
 
 export default async function AnalyticsDashboardPage() {
-  const allowedEmails = getAllowedEmails();
+  const allowedEmails = getAllowedAnalyticsEmails();
   const cookieStore = await cookies();
-  const accessToken = cookieStore.get('sb-access-token')?.value;
+  const analyticsEmail = cookieStore.get('nowish-analytics-email')?.value ?? null;
+  const email = analyticsEmail && analyticsEmail.trim().toLowerCase();
 
-  if (!accessToken) {
-    redirect('/login?redirect=/analytics');
+  if (!email) {
+    redirect('/login?next=/analytics');
   }
 
-  const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(accessToken);
-  const email = userData?.user?.email?.toLowerCase();
-
-  if (userError || !email || !allowedEmails.includes(email)) {
+  if (!isEmailAllowedForAnalytics(email)) {
     redirect('/');
   }
 

@@ -181,6 +181,11 @@ export default function HomePage() {
             onClick={async () => {
               const { supabase } = await import('@/lib/supabaseClient');
               await supabase.auth.signOut();
+              try {
+                await fetch('/api/auth/sync-analytics-cookie', { method: 'DELETE' });
+              } catch (error) {
+                console.warn('Failed to clear analytics cookie', error);
+              }
               setEmail(null);
               router.push('/');
             }}

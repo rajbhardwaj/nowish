@@ -11,6 +11,21 @@ function CallbackInner() {
 
   useEffect(() => {
     (async () => {
+      async function syncAnalyticsCookie() {
+        try {
+          const { data } = await supabase.auth.getSession();
+          const accessToken = data.session?.access_token;
+          if (!accessToken) return;
+          await fetch('/api/auth/sync-analytics-cookie', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ accessToken }),
+          });
+        } catch (error) {
+          console.warn('Failed to sync analytics cookie', error);
+        }
+      }
+
       try {
         // allow override like /auth/callback?next=/create
         const next = params.get('next') || '/create';
@@ -23,6 +38,8 @@ function CallbackInner() {
             window.location.replace('/login');
             return;
           }
+
+          await syncAnalyticsCookie();
           
           // Check if user needs to set their name
           const { data: { user } } = await supabase.auth.getUser();
@@ -56,6 +73,8 @@ function CallbackInner() {
               window.location.replace('/login');
               return;
             }
+
+            await syncAnalyticsCookie();
             
             // Check if user needs to set their name
             const { data: { user } } = await supabase.auth.getUser();
