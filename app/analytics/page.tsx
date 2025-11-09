@@ -1,3 +1,5 @@
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 type LandingRow = {
@@ -46,6 +48,16 @@ export const dynamic = 'force-dynamic';
 
 const DAYS_TO_PULL = 14;
 const HERO_WINDOW_DAYS = 7;
+const DEFAULT_ALLOWED_EMAIL = 'rajat82@gmail.com';
+
+function getAllowedEmails() {
+  const fromEnv = process.env.NOWISH_ANALYTICS_ALLOWED_EMAILS;
+  const raw = fromEnv && fromEnv.trim().length > 0 ? fromEnv : DEFAULT_ALLOWED_EMAIL;
+  return raw
+    .split(',')
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+}
 
 function formatNumber(value: number | null | undefined) {
   if (value === null || value === undefined || Number.isNaN(value)) return '—';
@@ -157,6 +169,21 @@ async function getAnalyticsData() {
 }
 
 export default async function AnalyticsDashboardPage() {
+  const allowedEmails = getAllowedEmails();
+  const cookieStore = await cookies();
+  const accessToken = cookieStore.get('sb-access-token')?.value;
+
+  if (!accessToken) {
+    redirect('/login?redirect=/analytics');
+  }
+
+  const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(accessToken);
+  const email = userData?.user?.email?.toLowerCase();
+
+  if (userError || !email || !allowedEmails.includes(email)) {
+    redirect('/');
+  }
+
   const { hero, landingRows, inviteDailyRows, rsvpRows } = await getAnalyticsData();
 
   return (
