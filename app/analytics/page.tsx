@@ -159,7 +159,6 @@ async function getAnalyticsData() {
 }
 
 export default async function AnalyticsDashboardPage() {
-  const allowedEmails = getAllowedAnalyticsEmails();
   const cookieStore = await cookies();
   const analyticsEmail = cookieStore.get('nowish-analytics-email')?.value ?? null;
   const email = analyticsEmail && analyticsEmail.trim().toLowerCase();

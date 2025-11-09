@@ -26,7 +26,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Not allowed' }, { status: 403 });
     }
 
-    cookies().set({
+    const cookieStore = await cookies();
+    cookieStore.set({
       name: COOKIE_NAME,
       value: email,
       httpOnly: true,
@@ -44,7 +45,8 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE() {
-  cookies().set({
+  const cookieStore = await cookies();
+  cookieStore.set({
     name: COOKIE_NAME,
     value: '',
     path: '/',
