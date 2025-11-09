@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { track } from '@/lib/analytics';
 
 // Add styles for animations
 const styles = `
@@ -307,6 +308,7 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
   }
 
   function downloadICS(inviteData: { title: string; host_name: string | null; window_start: string; window_end: string }) {
+    void track('add_to_calendar', { inviteId, metadata: { variant: 'simple' } });
     const start = new Date(inviteData.window_start);
     const end = new Date(inviteData.window_end);
     const summary = `${inviteData.title}${inviteData.host_name ? ` - ${inviteData.host_name}` : ''}`;
@@ -344,6 +346,7 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
     if (busy) return;
     
     console.log('sendRSVP called (logged in user), isLoggedIn:', isLoggedIn);
+    void track('rsvp_tap', { inviteId, metadata: { state: status, authenticated: true, variant: 'simple' } });
     
     setBusy(true);
     try {
@@ -430,6 +433,7 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
     
     setBusy(true);
     try {
+      void track('rsvp_tap', { inviteId, metadata: { state: status, authenticated: false, variant: 'simple' } });
       setState(status);
       
       // Save guest RSVP to database
@@ -559,6 +563,10 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
     console.log('Fetching invite for ID:', inviteId);
     fetchInvite();
   }, [inviteId, fetchInvite]);
+
+  useEffect(() => {
+    void track('invite_open', { inviteId, metadata: { variant: 'simple' } });
+  }, [inviteId]);
 
   // Auto-expire: mark expired at start + 30 minutes
   useEffect(() => {
@@ -808,6 +816,7 @@ export default function InviteClientSimple({ inviteId }: { inviteId: string }) {
           <p className="text-sm text-slate-600 mb-3">Start your own in 10 seconds</p>
           <a
             href="/create"
+            onClick={() => void track('footer_create_click', { metadata: { source: 'invite_footer', variant: 'simple' }, inviteId })}
             className="inline-flex items-center rounded-lg border border-blue-200 bg-gradient-to-r from-blue-100 to-indigo-100 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm transition-all duration-200 hover:from-blue-200 hover:to-indigo-200 active:scale-95"
           >
             Create an invite

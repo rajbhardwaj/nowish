@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
+import { track } from '@/lib/analytics';
 
 export default function HomePage() {
   const router = useRouter();
@@ -33,6 +34,10 @@ export default function HomePage() {
     }
   };
 
+  useEffect(() => {
+    track('landing_view', { metadata: { path: typeof window !== 'undefined' ? window.location.pathname : '/' } });
+  }, []);
+
   const handleCardTouch = () => {
     // Trigger ripple effect
     setShowRipple(true);
@@ -52,6 +57,11 @@ export default function HomePage() {
     // Reset ripple after animation
     setTimeout(() => setShowRipple(false), 600);
   };
+
+  const handleCreateInvite = useCallback(() => {
+    track('create_click', { metadata: { location: 'hero_primary' } });
+    router.push('/create');
+  }, [router]);
 
   useEffect(() => {
     // Set checking to false immediately for faster initial render
@@ -312,7 +322,7 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-        <div style={{ 
+        <div style={{
           textAlign: 'center', 
           marginTop: '8px',
           fontSize: '12px',
@@ -344,7 +354,7 @@ export default function HomePage() {
         margin: '1rem auto 0'
       }}>
         <button
-          onClick={() => router.push('/create')}
+          onClick={handleCreateInvite}
           style={{
             display: 'block',
             width: '100%',

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { track } from '@/lib/analytics';
 
 export default function InviteClient({ inviteId }: { inviteId: string }) {
   const [state, setState] = useState<string | null>(null);
@@ -20,6 +21,10 @@ export default function InviteClient({ inviteId }: { inviteId: string }) {
       setAuthedEmail(email);
     })();
   }, []);
+
+  useEffect(() => {
+    void track('invite_open', { inviteId, metadata: { variant: 'basic' } });
+  }, [inviteId]);
 
 
   async function upsertRsvp(payload: {
@@ -43,6 +48,8 @@ export default function InviteClient({ inviteId }: { inviteId: string }) {
       setShowCapture(true);
       return;
     }
+
+    void track('rsvp_tap', { inviteId, metadata: { state: status, authenticated: true, variant: 'basic' } });
 
     // === Signed-in: use their authed email so the same constraint applies ===
     setBusy(true);
@@ -83,6 +90,7 @@ export default function InviteClient({ inviteId }: { inviteId: string }) {
 
     setBusy(true);
     try {
+      void track('rsvp_tap', { inviteId, metadata: { state: pendingStatus, authenticated: false, variant: 'basic' } });
       setState(pendingStatus);
       const { error } = await upsertRsvp({
         invite_id: inviteId,
